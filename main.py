@@ -18,20 +18,13 @@ clr.AddReference("RevitNodes")
 doc = DocumentManager.Instance.CurrentDBDocument
 
 
-def changeWallOpenings(doc):
-    listOfLevelIds = getListOfLevelIds(doc)
-    fltr = db.ElementCategoryFilter(db.BuiltInCategory.OST_GenericModel)
-    allGenerics = db.FilteredElementCollector(doc).WherePasses(fltr).WhereElementIsNotElementType().ToElements()
-    lst = list()
-    for generic in allGenerics:
-        # jestli host jest scianą to wtedy zmien rzędne
-        pass
-    return allGenerics
-
 # functions collecting side elements
 def getListOfLevelIds(doc):
     fltr = db.ElementCategoryFilter(db.BuiltInCategory.OST_Levels)
-    allLevels = db.FilteredElementCollector(doc).WherePasses(fltr).WhereElementIsNotElementType().ToElements()
+    if (IN[1]):
+        allLevels = db.FilteredElementCollector(doc).WherePasses(fltr).WhereElementIsNotElementType().ToElements()
+    else:
+        allLevels = db.FilteredElementCollector(doc, doc.ActiveView.Id).WherePasses(fltr).WhereElementIsNotElementType().ToElements()
     lst = list()
     for level in sorted(allLevels, key=lambda x: x.Elevation):
         lst.append(level.Id)
@@ -469,7 +462,7 @@ def getlistOfElements():
         else:
             return [IN[0]]
     except:
-        pass
+        return [IN[0]]
 
 levels = getListOfLevelIds(doc)
 lst = list()
