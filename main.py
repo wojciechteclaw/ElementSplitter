@@ -552,6 +552,7 @@ class MepSplitter(ElementSplitter):
         TransactionManager.Instance.EnsureInTransaction(self.doc)
         element.get_Parameter(db.BuiltInParameter.RBS_START_LEVEL_PARAM).Set(levelId)
         TransactionManager.Instance.TransactionTaskDone()
+        return 
 
     # Sets new base boundry for element
     def setNewBaseBoundries(self, levelIndex, newLevelIndex):
@@ -563,21 +564,40 @@ class MepSplitter(ElementSplitter):
 
     def addUnion(self, newElement, elementToSplit):
         #each pipe has 2 connectors
+        newElementManager = newElement.ConnectorManager
+        oldElementManager = elementToSplit.ConnectorManager
         for i in range(2):
             for j in range(2):
-                newConnector = newElement.ConnectorManager.Lookup(i)
-                oldConnector = elementToSplit.ConnectorManager.Lookup(j)
+                newConnector = newElementManager.Lookup(i)
+                oldConnector = oldElementManager.Lookup(j)
                 if newConnector.Origin.IsAlmostEqualTo(oldConnector.Origin):
                     TransactionManager.Instance.EnsureInTransaction(self.doc)
                     union = self.doc.Create.NewUnionFitting(newConnector, oldConnector)
                     TransactionManager.Instance.TransactionTaskDone()
                     return union
 
+    def assignProperLevelToElement(self, element, listOfLevels):
+        elementCurve = element.Location.Curve
+        if self.elementLocationStyle == "TopToDown":
+            point = elementCurve.GetEndPoint(1)
+        else:
+            point = elementCurve.GetEndPoint(0)
+        levelIndex = None
+        for level in listOfLevels:
+            if level.Elevation >= point.Z and levelIndex == None:
+                levelIndex = listOfLevels.index(level)
+                if levelIndex != 0 and levelIndex != len(listOfLevels) - 1:
+                    levelIndex = levelIndex - 1
+
+        self.test.append((element, self.setBaseConstraintLevelId(element, self.levelsList[levelIndex])))
+
     def tryToAssignElementsToLevelsAndAddConnectors(self, newElement, elementToSplit, listOfLevels):
-        tempList = list()
+        if elementToSplit != None:
+            self.assignProperLevelToElement(elementToSplit, listOfLevels)
         if newElement != None:
-            tempList.append(self.addUnion(newElement, elementToSplit))
-        self.test.append(tempList)
+            self.assignProperLevelToElement(newElement, listOfLevels)
+        if newElement != None:
+            self.addUnion(newElement, elementToSplit)
 
 class DuctSplitter(MepSplitter):
 
@@ -609,7 +629,6 @@ class PipeSplitter(MepSplitter):
         if self.elementLocationStyle == "TopToDown":
             return newElement
         return elementToSplit
-
 
 def getlistOfElements():
     try:
@@ -653,4 +672,4 @@ for element in getlistOfElements():
         lst.append(element.splitElement())
 
 
-OUT = "done"
+OUT = lst
