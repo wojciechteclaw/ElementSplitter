@@ -449,7 +449,6 @@ class MepSplitter(ElementSplitter):
     
     # Splits slanted column
     def splitElement(self):
-        self.test = []
         elementsToAssignProperLevel = list()
         levels = self.convertListOfLevelIdsToElements()
         if not self.isElementPossibleToSplit():
@@ -462,14 +461,10 @@ class MepSplitter(ElementSplitter):
                 break
             elif levelElevation > self.startPoint.Z and levelElevation + 0.01 < self.endPoint.Z:
                 elementToSplit = self.splitVerticalElement(elementToSplit, level, levels)
-        return self.test
 
     def assignLevelsToElements(self, elements, levels):
-        lst = list()
         for element in elements:
-            lst.append(self.setBaseLevelToElement(element, levels))
-        return lst
-
+            self.setBaseLevelToElement(element, levels)
 
     def setBaseLevelToElement(self, element, levels):
         elementCurve = element.Location.Curve
@@ -589,7 +584,7 @@ class MepSplitter(ElementSplitter):
                 if levelIndex != 0 and levelIndex != len(listOfLevels) - 1:
                     levelIndex = levelIndex - 1
 
-        self.test.append((element, self.setBaseConstraintLevelId(element, self.levelsList[levelIndex])))
+        self.setBaseConstraintLevelId(element, self.levelsList[levelIndex])
 
     def tryToAssignElementsToLevelsAndAddConnectors(self, newElement, elementToSplit, listOfLevels):
         if elementToSplit != None:
@@ -641,8 +636,6 @@ def getlistOfElements():
         return [IN[0]]
 
 levels = getListOfLevelIds(doc)
-lst = list()
-
 for element in getlistOfElements():
     # converts dynamo element to revit element
     try:
@@ -669,7 +662,7 @@ for element in getlistOfElements():
     elif elementType == db.Plumbing.Pipe:
         element = PipeSplitter(doc, revitElement, levels)
     if element != None:
-        lst.append(element.splitElement())
+        element.splitElement()
 
 
-OUT = lst
+OUT = "done"
