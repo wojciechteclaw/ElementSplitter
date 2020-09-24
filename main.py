@@ -84,6 +84,11 @@ class WallOpenings():
 
 # splitter main class - abstract class
 class ElementSplitter():
+
+    def __init__(self, doc, element, levelsList):
+        self.doc = doc
+        self.element = element
+        self.levelsList = levelsList
     
     # Lanuch function which tries to modify offsets
     def modifyLevelsAndOffsets(self):
@@ -279,11 +284,6 @@ class ElementSplitter():
 
 class WallSplitter(ElementSplitter):
 
-    def __init__(self, doc, element, levelsList):
-        self.doc = doc
-        self.element = element
-        self.levelsList = levelsList
-    
 #GETTERS
 
     # Returns base constraint levelId
@@ -331,11 +331,6 @@ class WallSplitter(ElementSplitter):
 
 class ColumnSplitter(ElementSplitter):
 
-    def __init__(self, doc, element, levelsList):
-        self.doc = doc
-        self.element = element
-        self.levelsList = levelsList
-
 #GETTERS
 
     # Returns base constraint
@@ -376,11 +371,6 @@ class ColumnSplitter(ElementSplitter):
         element.get_Parameter(db.BuiltInParameter.FAMILY_TOP_LEVEL_OFFSET_PARAM).Set(value)
 
 class SlantedColumnSplitter(ColumnSplitter):
-
-    def __init__(self, doc, element, levelsList):
-        self.doc = doc
-        self.element = element
-        self.levelsList = levelsList
 
 #GETTERS  - inherits from parent
     
@@ -454,6 +444,173 @@ class SlantedColumnSplitter(ColumnSplitter):
             self.setOffsetForLastElement(elementBeingSplit, i, coefficientOfSplitting)
             self.setElementData(elementBeingSplit)
 
+# Abstract class for MEP elements which is inherited by certain MEP categories
+class MepSplitter(ElementSplitter):
+    
+    # Splits slanted column
+    def splitElement(self):
+        self.test = []
+        elementsToAssignProperLevel = list()
+        levels = self.convertListOfLevelIdsToElements()
+        if not self.isElementPossibleToSplit():
+            return None
+        elementToSplit = self.element
+        elementsToAssignProperLevel.append(elementToSplit)
+        for level in levels:
+            levelElevation = level.Elevation
+            if elementToSplit == None:
+                break
+            elif levelElevation > self.startPoint.Z and levelElevation + 0.01 < self.endPoint.Z:
+                elementToSplit = self.splitVerticalElement(elementToSplit, level, levels)
+        return self.test
+
+    def assignLevelsToElements(self, elements, levels):
+        lst = list()
+        for element in elements:
+            lst.append(self.setBaseLevelToElement(element, levels))
+        return lst
+
+
+    def setBaseLevelToElement(self, element, levels):
+        elementCurve = element.Location.Curve
+        if self.elementLocationStyle == "TopToDown":
+            elementStartPoint = elementCurve.GetEndPoint(0)
+        else:
+            elementStartPoint = elementCurve.GetEndPoint(1)
+        return elementCurve.GetEndPoint(0)
+        for level in levels:
+            elevation = level.Elevation
+            if levels.index(level) == 0 and elementStartPoint < elevation:
+                self.setBaseConstraintLevelId(element, self.levelsList[0])
+
+    def splitVerticalElement(self, elementToSplit, cutLevel, listOfLevels):
+        tempElementCurve = elementToSplit.Location.Curve
+        endPoint = tempElementCurve.GetEndPoint(1)
+        startPoint = tempElementCurve.GetEndPoint(0)
+        vectorFromStartPointToEndPoint = endPoint - startPoint
+        proportionOfDistanceToCutLocation = math.fabs(startPoint.Z - cutLevel.Elevation)/startPoint.DistanceTo(endPoint)
+        cutPoint = startPoint + vectorFromStartPointToEndPoint * proportionOfDistanceToCutLocation
+        return self.cutElementAndAssignUnionsPlusLevels(elementToSplit, cutPoint, listOfLevels)
+
+    # checkes if element is almost vertical, it check is horizontal distance ratio between top and down in order 
+    # to vertical distance is less than 0.0001
+    def checkIfElementIsAlmostVertical(self):
+        verticalLength = math.fabs(self.endPoint.Z - self.startPoint.Z)
+        horizontalLength = math.sqrt(math.fabs(self.endPoint.X - self.startPoint.X)**2 + math.fabs(self.endPoint.Y - self.startPoint.Y)**2)
+        if horizontalLength/verticalLength <= 0.0001:
+            return True
+        else:
+            return False
+
+    # checks style of a MEP element is it model from Top to Down or from Down to Top and assignes parameter
+    def isStartPointUpOrDown(self, originalStart, originalEnd):
+        if originalStart.Z > originalEnd.Z:
+            self.elementLocationStyle = "TopToDown"
+            self.startPoint = originalEnd
+            self.endPoint = originalStart
+        else:
+            self.elementLocationStyle = "DownToTop"
+            self.startPoint = originalStart
+            self.endPoint = originalEnd
+           
+
+    # checks if element goes trought more than
+    def isElementPossibleToSplit(self):
+        elementCurve = self.element.Location.Curve
+        self.isStartPointUpOrDown(elementCurve.GetEndPoint(0), elementCurve.GetEndPoint(1))
+        if not self.checkIfElementIsAlmostVertical():
+            return False
+        startPointLevelIndex = None
+        endPointLevelIndex = None
+        levels = self.convertListOfLevelIdsToElements()
+        for level in levels:
+            levelElevation = level.Elevation
+            if self.startPoint.Z < levelElevation and self.endPoint.Z > levelElevation + 0.01:
+                return True
+            else:
+                continue
+        if self.startPoint.Z < levelElevation and self.endPoint.Z > levelElevation + 0.01:
+                return True
+        return False
+
+    # tries to modify element to set level as low as it is possible
+    # and reduce offset. Instead of situation: Level no 3 with offset -10m
+    # it changes elements base level ie. Level no 0 with offset -50cm 
+    
+    #GETTERS
+    # Returns base constraint levelId
+    def getBaseConstraintLevelId(self):
+        return self.element.get_Parameter(db.BuiltInParameter.RBS_START_LEVEL_PARAM).AsElementId()
+
+    # Returns base offset value
+    def getBaseOffsetValue(self):
+        return self.element.get_Parameter(db.BuiltInParameter.RBS_START_OFFSET_PARAM).AsDouble()
+
+    #SETTERS
+    # Void, sets base constraint level based on level Id
+    def setBaseConstraintLevelId(self, element, levelId):
+        TransactionManager.Instance.EnsureInTransaction(self.doc)
+        element.get_Parameter(db.BuiltInParameter.RBS_START_LEVEL_PARAM).Set(levelId)
+        TransactionManager.Instance.TransactionTaskDone()
+
+    # Sets new base boundry for element
+    def setNewBaseBoundries(self, levelIndex, newLevelIndex):
+        differenceInOffset = self.getDistanceBetweenLevels(levelIndex, newLevelIndex)
+        newLevelId = self.levelsList[newLevelIndex]
+        TransactionManager.Instance.EnsureInTransaction(doc)
+        self.setBaseConstraintLevelId(self.element, newLevelId)
+        TransactionManager.Instance.TransactionTaskDone()
+
+    def addUnion(self, newElement, elementToSplit):
+        #each pipe has 2 connectors
+        for i in range(2):
+            for j in range(2):
+                newConnector = newElement.ConnectorManager.Lookup(i)
+                oldConnector = elementToSplit.ConnectorManager.Lookup(j)
+                if newConnector.Origin.IsAlmostEqualTo(oldConnector.Origin):
+                    TransactionManager.Instance.EnsureInTransaction(self.doc)
+                    union = self.doc.Create.NewUnionFitting(newConnector, oldConnector)
+                    TransactionManager.Instance.TransactionTaskDone()
+                    return union
+
+    def tryToAssignElementsToLevelsAndAddConnectors(self, newElement, elementToSplit, listOfLevels):
+        tempList = list()
+        if newElement != None:
+            tempList.append(self.addUnion(newElement, elementToSplit))
+        self.test.append(tempList)
+
+class DuctSplitter(MepSplitter):
+
+    def cutElementAndAssignUnionsPlusLevels(self, elementToSplit, cutPoint, listOfLevels):
+        TransactionManager.Instance.EnsureInTransaction(self.doc)
+        try:
+            newElementId = db.Mechanical.MechanicalUtils.BreakCurve(self.doc, elementToSplit.Id, cutPoint)
+            newElement = self.doc.GetElement(newElementId)
+        except:
+            newElement = None
+        TransactionManager.Instance.TransactionTaskDone()
+        self.tryToAssignElementsToLevelsAndAddConnectors(newElement, elementToSplit, listOfLevels)
+        if self.elementLocationStyle == "TopToDown":
+            return newElement
+        return elementToSplit
+
+
+class PipeSplitter(MepSplitter):
+
+    def cutElementAndAssignUnionsPlusLevels(self, elementToSplit, cutPoint, listOfLevels):
+        TransactionManager.Instance.EnsureInTransaction(self.doc)
+        try:
+            newElementId = db.Plumbing.PlumbingUtils.BreakCurve(self.doc, elementToSplit.Id, cutPoint)
+            newElement = self.doc.GetElement(newElementId)
+        except:
+            newElement = None
+        TransactionManager.Instance.TransactionTaskDone()
+        self.tryToAssignElementsToLevelsAndAddConnectors(newElement, elementToSplit, listOfLevels)
+        if self.elementLocationStyle == "TopToDown":
+            return newElement
+        return elementToSplit
+
+
 def getlistOfElements():
     try:
         numberOfElements = len(IN[0])
@@ -488,8 +645,12 @@ for element in getlistOfElements():
             element = ColumnSplitter(doc, revitElement, levels)
         elif structuralType == db.Structure.StructuralType.Column and revitElement.IsSlantedColumn:
             element = SlantedColumnSplitter(doc, revitElement, levels)
+    elif elementType == db.Mechanical.Duct:
+        element = DuctSplitter(doc, revitElement, levels)
+    elif elementType == db.Plumbing.Pipe:
+        element = PipeSplitter(doc, revitElement, levels)
     if element != None:
-        element.splitElement()
+        lst.append(element.splitElement())
 
 
 OUT = "done"
