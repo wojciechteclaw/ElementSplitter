@@ -41,16 +41,20 @@ class WallOpenings():
         self.createDictionaryOpeningAndItsLevel()
 
     # Deletes openings which are not in boundries of new/edited wall element
-    # TO DO function which allows to keep openings i.e. wall base level: lvl 2 
-    # offset - 2000 -> openings under level 2 will be deleted
     def deleteOpeningsNotInWallRange(self):
-        wallBaseConstrain = self.wall.get_Parameter(db.BuiltInParameter.WALL_BASE_CONSTRAINT).AsElementId()
+        wallBaseConstrainId = self.wall.get_Parameter(db.BuiltInParameter.WALL_BASE_CONSTRAINT).AsElementId()
+        wallBaseOffset = self.wall.get_Parameter(db.BuiltInParameter.WALL_BASE_OFFSET).AsDouble()
+        wallTopConstrain = self.wall.get_Parameter(db.BuiltInParameter.WALL_HEIGHT_TYPE).AsElementId()
+        wallTopOffset = self.wall.get_Parameter(db.BuiltInParameter.WALL_TOP_OFFSET).AsDouble()
+
+        wallBaseElevation = self.doc.GetElement(wallBaseConstrainId).Elevation + wallBaseOffset
+        wallTopElevation = self.doc.GetElement(wallTopConstrain).Elevation + wallTopOffset
+        TransactionManager.Instance.EnsureInTransaction(self.doc)
         for openingId in self.openingDictionary:
-            openingRecalculatedLevel = self.openingDictionary[openingId]
-            if openingRecalculatedLevel != wallBaseConstrain:
-                TransactionManager.Instance.EnsureInTransaction(self.doc)
+            openingElevation = self.openingDictionary[openingId]
+            if openingElevation < wallBaseElevation or openingElevation > wallTopElevation:
                 self.doc.Delete(openingId)
-                TransactionManager.Instance.TransactionTaskDone()
+        TransactionManager.Instance.TransactionTaskDone()
            
     # Creates list of openings elements ids and assigns it to allOpeningsId element
     def getListOfOpeningsHostedInWall(self):
@@ -61,22 +65,19 @@ class WallOpenings():
         self.openingDictionary = {}
         for openingId in self.allOpeningsId:
             opening = doc.GetElement(openingId)
-            self.openingDictionary[openingId] = self.getClosestLevelId(opening)
+            self.openingDictionary[openingId] = self.getElevationOfOpening(opening)
         return self.openingDictionary
 
     # Returns levelId of the closest to an opening
-    def getClosestLevelId(self, opening):
+    def getElevationOfOpening(self, opening):
         openingLevelId = opening.LookupParameter("Level").AsElementId()
+        openingLevel = self.doc.GetElement(openingLevelId)
         index = self.levels.index(openingLevelId)
         try:
-            openingGeneralElevation = doc.GetElement(levels[index]).Elevation + opening.LookupParameter("Elevation").AsDouble()
+            openingGeneralElevation = openingLevel.Elevation + opening.LookupParameter("Elevation").AsDouble()
         except AttributeError:
-            openingGeneralElevation = doc.GetElement(levels[index]).Elevation + opening.LookupParameter("Elevation from Level").AsDouble()
-        if index != len(self.levels) - 1:
-            newIndexOfLevel = self.getLevelIndex(index, opening, openingGeneralElevation)
-            return self.levels[newIndexOfLevel]
-        else:
-            return levels[index]
+            openingGeneralElevation = openingLevel.Elevation + opening.LookupParameter("Elevation from Level").AsDouble()
+        return openingGeneralElevation
 
     # Gets level index in list of levels
     def getLevelIndex(self, index, opening, openingGeneralElevation):
@@ -188,13 +189,16 @@ class ElementSplitter():
 
     # checks if element goes trought more than
     def isElementPossibleToSplit(self):
-        self.modifyLevelsAndOffsets()
-        startLevelIndex = self.getIndexOfBaseLevel()
-        endLevelIndex = self.getIndexOfTopLevel()
-        if startLevelIndex + 1 == endLevelIndex:
+        try:
+            self.modifyLevelsAndOffsets()
+            startLevelIndex = self.getIndexOfBaseLevel()
+            endLevelIndex = self.getIndexOfTopLevel()
+            if startLevelIndex + 1 == endLevelIndex:
+                return False
+            else:
+                return True
+        except:
             return False
-        else:
-            return True
         
     # Calculates distance between levels
     def getDistanceBetweenLevels(self, originalLevelIndex, newLevelIndex):
