@@ -34,13 +34,15 @@ def getListOfLevelIds(doc):
 class WallOpenings():
 
     def __init__(self, levelsList, wall, doc):
-        self. levels = levelsList
+        self.levels = levelsList
         self.wall = wall
         self.doc = doc
         self.getListOfOpeningsHostedInWall()
         self.createDictionaryOpeningAndItsLevel()
 
     # Deletes openings which are not in boundries of new/edited wall element
+    # TO DO function which allows to keep openings i.e. wall base level: lvl 2 
+    # offset - 2000 -> openings under level 2 will be deleted
     def deleteOpeningsNotInWallRange(self):
         wallBaseConstrain = self.wall.get_Parameter(db.BuiltInParameter.WALL_BASE_CONSTRAINT).AsElementId()
         for openingId in self.openingDictionary:
@@ -66,7 +68,10 @@ class WallOpenings():
     def getClosestLevelId(self, opening):
         openingLevelId = opening.LookupParameter("Level").AsElementId()
         index = self.levels.index(openingLevelId)
-        openingGeneralElevation = doc.GetElement(levels[index]).Elevation + opening.LookupParameter("Elevation").AsDouble()
+        try:
+            openingGeneralElevation = doc.GetElement(levels[index]).Elevation + opening.LookupParameter("Elevation").AsDouble()
+        except AttributeError:
+            openingGeneralElevation = doc.GetElement(levels[index]).Elevation + opening.LookupParameter("Elevation from Level").AsDouble()
         if index != len(self.levels) - 1:
             newIndexOfLevel = self.getLevelIndex(index, opening, openingGeneralElevation)
             return self.levels[newIndexOfLevel]
