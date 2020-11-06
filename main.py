@@ -34,7 +34,7 @@ def getListOfLevelIds(doc):
 class WallOpenings():
 
     def __init__(self, levelsList, wall, doc):
-        self. levels = levelsList
+        self.levels = levelsList
         self.wall = wall
         self.doc = doc
         self.getListOfOpeningsHostedInWall()
@@ -42,13 +42,19 @@ class WallOpenings():
 
     # Deletes openings which are not in boundries of new/edited wall element
     def deleteOpeningsNotInWallRange(self):
-        wallBaseConstrain = self.wall.get_Parameter(db.BuiltInParameter.WALL_BASE_CONSTRAINT).AsElementId()
+        wallBaseConstrainId = self.wall.get_Parameter(db.BuiltInParameter.WALL_BASE_CONSTRAINT).AsElementId()
+        wallBaseOffset = self.wall.get_Parameter(db.BuiltInParameter.WALL_BASE_OFFSET).AsDouble()
+        wallTopConstrain = self.wall.get_Parameter(db.BuiltInParameter.WALL_HEIGHT_TYPE).AsElementId()
+        wallTopOffset = self.wall.get_Parameter(db.BuiltInParameter.WALL_TOP_OFFSET).AsDouble()
+
+        wallBaseElevation = self.doc.GetElement(wallBaseConstrainId).Elevation + wallBaseOffset
+        wallTopElevation = self.doc.GetElement(wallTopConstrain).Elevation + wallTopOffset
+        TransactionManager.Instance.EnsureInTransaction(self.doc)
         for openingId in self.openingDictionary:
-            openingRecalculatedLevel = self.openingDictionary[openingId]
-            if openingRecalculatedLevel != wallBaseConstrain:
-                TransactionManager.Instance.EnsureInTransaction(self.doc)
+            openingElevation = self.openingDictionary[openingId]
+            if openingElevation < wallBaseElevation or openingElevation > wallTopElevation:
                 self.doc.Delete(openingId)
-                TransactionManager.Instance.TransactionTaskDone()
+        TransactionManager.Instance.TransactionTaskDone()
            
     # Creates list of openings elements ids and assigns it to allOpeningsId element
     def getListOfOpeningsHostedInWall(self):
@@ -59,19 +65,19 @@ class WallOpenings():
         self.openingDictionary = {}
         for openingId in self.allOpeningsId:
             opening = doc.GetElement(openingId)
-            self.openingDictionary[openingId] = self.getClosestLevelId(opening)
+            self.openingDictionary[openingId] = self.getElevationOfOpening(opening)
         return self.openingDictionary
 
     # Returns levelId of the closest to an opening
-    def getClosestLevelId(self, opening):
+    def getElevationOfOpening(self, opening):
         openingLevelId = opening.LookupParameter("Level").AsElementId()
+        openingLevel = self.doc.GetElement(openingLevelId)
         index = self.levels.index(openingLevelId)
-        openingGeneralElevation = doc.GetElement(levels[index]).Elevation + opening.LookupParameter("Elevation").AsDouble()
-        if index != len(self.levels) - 1:
-            newIndexOfLevel = self.getLevelIndex(index, opening, openingGeneralElevation)
-            return self.levels[newIndexOfLevel]
-        else:
-            return levels[index]
+        try:
+            openingGeneralElevation = openingLevel.Elevation + opening.LookupParameter("Elevation").AsDouble()
+        except AttributeError:
+            openingGeneralElevation = openingLevel.Elevation + opening.LookupParameter("Elevation from Level").AsDouble()
+        return openingGeneralElevation
 
     # Gets level index in list of levels
     def getLevelIndex(self, index, opening, openingGeneralElevation):
@@ -183,18 +189,21 @@ class ElementSplitter():
 
     # checks if element goes trought more than
     def isElementPossibleToSplit(self):
-        self.modifyLevelsAndOffsets()
-        startLevelIndex = self.getIndexOfBaseLevel()
-        endLevelIndex = self.getIndexOfTopLevel()
-        if startLevelIndex + 1 == endLevelIndex:
+        try:
+            self.modifyLevelsAndOffsets()
+            startLevelIndex = self.getIndexOfBaseLevel()
+            endLevelIndex = self.getIndexOfTopLevel()
+            if startLevelIndex + 1 == endLevelIndex:
+                return False
+            else:
+                return True
+        except:
             return False
-        else:
-            return True
         
     # Calculates distance between levels
     def getDistanceBetweenLevels(self, originalLevelIndex, newLevelIndex):
         listOfLevels = self.convertListOfLevelIdsToElements()
-        return math.fabs(listOfLevels[originalLevelIndex].Elevation - listOfLevels[newLevelIndex].Elevation)
+        return listOfLevels[originalLevelIndex].Elevation - listOfLevels[newLevelIndex].Elevation
 
     # Converts list of levels ids to elements
     def convertListOfLevelIdsToElements(self):
@@ -207,6 +216,8 @@ class ElementSplitter():
     # and reduce offset. Instead of situation: Level no 3 with offset 10m
     # it changes elements base level ie. Level no 5 with offset -50cm 
     def tryToModifyTopBoundries(self):
+        lst = list()
+        levels = self.convertListOfLevelIdsToElements()
         try:
             index = self.getIndexOfTopLevel()
             endLevelOffset = self.getTopOffsetValue()
@@ -218,27 +229,26 @@ class ElementSplitter():
                 endLevelOffset = self.getHeight() + self.getBaseOffsetValue()
             else:
                 endLevelOffset = self.getHeight() - self.getBaseOffsetValue()
-        levels = self.convertListOfLevelIdsToElements()
+        elementElevation = levels[index].Elevation + endLevelOffset
         indexOfNewLevel = None
-        if index != len(levels) - 1:
-            for i in range(index + 1, len(levels)):
-                if endLevelOffset >= (levels[i].Elevation - levels[index].Elevation):
-                    indexOfNewLevel = i
-                else:
-                    break
+        for i in range(len(levels)):
+            if levels[i].Elevation <= elementElevation:
+                indexOfNewLevel = i
+                lst.append(indexOfNewLevel)
+            else:
+                break
         if indexOfNewLevel != None:
-            self.setNewTopBoundries(index, indexOfNewLevel)
+            return self.setNewTopBoundries(index, indexOfNewLevel)
 
     # Sets new top boundry for element
     def setNewTopBoundries(self, levelIndex, newLevelIndex):
         differenceInOffset = self.getDistanceBetweenLevels(levelIndex, newLevelIndex)
-        if  self.getTopConstraintLevelId().IntegerValue == -1: 
-            if self.getBaseOffsetValue() < 0:
-                newOffset = self.getHeight() - differenceInOffset + self.getBaseOffsetValue()
-            else:
-                newOffset = self.getHeight() - differenceInOffset - self.getBaseOffsetValue()
+        # if wall is unconnected
+        if self.getTopConstraintLevelId().IntegerValue == -1:
+            newOffset = self.getHeight() + self.getBaseOffsetValue() + differenceInOffset
+        # Top is constrained to level
         else:
-            newOffset = self.getTopOffsetValue() - differenceInOffset
+            newOffset = self.getTopOffsetValue() + differenceInOffset
         newLevelId = self.levelsList[newLevelIndex]
         TransactionManager.Instance.EnsureInTransaction(doc)
         self.setTopConstraintLevelId(self.element, newLevelId)
@@ -686,5 +696,4 @@ for element in getlistOfElements():
         element = PipeSplitter(doc, revitElement, levels)
     if element != None:
         element.splitElement()
-
 OUT = "done"
