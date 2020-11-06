@@ -13,8 +13,7 @@
       "ConcreteType": "Dynamo.Nodes.DSModelElementsSelection, DSRevitNodesUI",
       "NodeType": "ExtensionNode",
       "InstanceId": [
-        "3edd6cfb-6923-4d74-af5d-a8a18e1169df-00053940",
-        "3edd6cfb-6923-4d74-af5d-a8a18e1169df-00053952"
+        "a1e200c5-a8ce-4b74-9c19-fb2c2d35a860-000463b1"
       ],
       "Id": "b344bca634e843c9b56662ad23e52a4b",
       "Inputs": [],
@@ -74,7 +73,7 @@
     {
       "ConcreteType": "CoreNodeModels.Input.BoolSelector, CoreNodeModels",
       "NodeType": "BooleanInputNode",
-      "InputValue": true,
+      "InputValue": false,
       "Id": "d16f6f1cec3e4fdc96ed925e48597c39",
       "Inputs": [],
       "Outputs": [

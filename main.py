@@ -449,8 +449,11 @@ class SlantedColumnSplitter(ColumnSplitter):
                     segmentLen = self.doc.GetElement(self.levelsList[i+1]).Elevation - self.doc.GetElement(self.levelsList[i]).Elevation
                 coefficientOfSplitting = segmentLen/splitedElementLength
                 elementBeingSplit = self.splitColumnIntoTwoElements(elementBeingSplit, i, coefficientOfSplitting)
-            self.setOffsetForLastElement(elementBeingSplit, i, coefficientOfSplitting)
-            self.setElementData(elementBeingSplit)
+            try:
+                self.setOffsetForLastElement(elementBeingSplit, i, coefficientOfSplitting)
+                self.setElementData(elementBeingSplit)
+            except:
+                pass
 
 
 # Abstract class for MEP elements which is inherited by certain MEP categories
