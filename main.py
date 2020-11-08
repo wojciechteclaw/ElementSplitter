@@ -582,6 +582,16 @@ class MepSplitter(ElementSplitter):
         self.setBaseConstraintLevelId(self.element, newLevelId)
         TransactionManager.Instance.TransactionTaskDone()
 
+    # AddsConnector based on elementLocationStyle modeling style 
+    def createNewUnion(self, newConnector, oldConnector):
+        TransactionManager.Instance.EnsureInTransaction(self.doc)
+        if self.elementLocationStyle == "TopToDown":
+            union = self.doc.Create.NewUnionFitting(oldConnector, newConnector)
+        else:
+            union = self.doc.Create.NewUnionFitting(newConnector, oldConnector)
+        TransactionManager.Instance.TransactionTaskDone()
+        return union
+
     # Adds MEP element union 
     def addUnion(self, newElement, elementToSplit):
         newElementManager = newElement.ConnectorManager
@@ -591,10 +601,7 @@ class MepSplitter(ElementSplitter):
                 newConnector = newElementManager.Lookup(i)
                 oldConnector = oldElementManager.Lookup(j)
                 if newConnector.Origin.IsAlmostEqualTo(oldConnector.Origin):
-                    TransactionManager.Instance.EnsureInTransaction(self.doc)
-                    union = self.doc.Create.NewUnionFitting(newConnector, oldConnector)
-                    TransactionManager.Instance.TransactionTaskDone()
-                    return union
+                    return self.createNewUnion(newConnector, oldConnector)
 
     # Assigns element to proper level
     def assignProperLevelToElement(self, element, listOfLevels):
