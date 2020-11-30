@@ -5,6 +5,10 @@ from sys import path as sysPath
 sysPath.append("C:\Program Files (x86)\IronPython 2.7\Lib")
 import math
 
+#import system
+import System
+from System.Collections.Generic import *
+
 # Import DocumentManager and TransactionManager
 clr.AddReference("RevitServices")
 import RevitServices
@@ -99,6 +103,7 @@ class ElementSplitter():
         self.doc = doc
         self.element = element
         self.levelsList = levelsList
+        self.listOfElements = list()
     
     # Lanuch function which tries to modify offsets
     def modifyLevelsAndOffsets(self):
@@ -142,6 +147,15 @@ class ElementSplitter():
             self.additionalModificationOfElement(element)
             return element
 
+    def createGroup(self):
+        lst = list()
+        for el in self.listOfElements:
+            lst.append(el.Id)
+        newList = List[db.ElementId](lst)
+        TransactionManager.Instance.EnsureInTransaction(self.doc)
+        self.doc.Create.NewGroup(newList)
+        TransactionManager.Instance.TransactionTaskDone()
+
     # General function for splitting elements
     def splitElement(self):
         self.getElementData()
@@ -169,8 +183,11 @@ class ElementSplitter():
                 self.setBaseConstraintLevelId(elementToChange, self.levelsList[i])
                 self.setTopConstraintLevelId(elementToChange, self.levelsList[i+1])
                 self.additionalModificationOfElement(elementToChange)
+                self.listOfElements.append(elementToChange)
             self.joinElementsInList()
             self.deleteOriginalElement()
+            if IN[2]:
+                self.createGroup()
     
     # Joins list of elements 
     def joinElementsInList(self):
@@ -449,6 +466,7 @@ class SlantedColumnSplitter(ColumnSplitter):
             startLevelIndex = self.getIndexOfBaseLevel()
             endLevelIndex = self.getIndexOfTopLevel()
             elementBeingSplit = self.element
+            self.listOfElements.append(self.element)
             for i in range(startLevelIndex, endLevelIndex):
                 splitedElementLength = self.getElementVerticalHeight(elementBeingSplit)
                 if i == startLevelIndex:
@@ -459,11 +477,16 @@ class SlantedColumnSplitter(ColumnSplitter):
                     segmentLen = self.doc.GetElement(self.levelsList[i+1]).Elevation - self.doc.GetElement(self.levelsList[i]).Elevation
                 coefficientOfSplitting = segmentLen/splitedElementLength
                 elementBeingSplit = self.splitColumnIntoTwoElements(elementBeingSplit, i, coefficientOfSplitting)
+                self.listOfElements.append(elementBeingSplit)
             try:
                 self.setOffsetForLastElement(elementBeingSplit, i, coefficientOfSplitting)
                 self.setElementData(elementBeingSplit)
+                
             except:
                 pass
+        if IN[2]:
+            self.createGroup()
+
 
 
 # Abstract class for MEP elements which is inherited by certain MEP categories
