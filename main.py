@@ -501,7 +501,7 @@ class MepSplitter(ElementSplitter):
         elementToSplit = self.element
         elementsToAssignProperLevel.append(elementToSplit)
         for level in levels:
-            levelElevation = level.Elevation
+            levelElevation = level.ProjectElevation
             if elementToSplit == None:
                 break
             elif levelElevation > self.startPoint.Z and levelElevation + 0.01 < self.endPoint.Z:
@@ -521,7 +521,7 @@ class MepSplitter(ElementSplitter):
             elementStartPoint = elementCurve.GetEndPoint(1)
         return elementCurve.GetEndPoint(0)
         for level in levels:
-            elevation = level.Elevation
+            elevation = level.ProjectElevation
             if levels.index(level) == 0 and elementStartPoint < elevation:
                 self.setBaseConstraintLevelId(element, self.levelsList[0])
 
@@ -572,7 +572,7 @@ class MepSplitter(ElementSplitter):
         endPointLevelIndex = None
         levels = self.convertListOfLevelIdsToElements()
         for level in levels:
-            levelElevation = level.Elevation
+            levelElevation = level.ProjectElevation
             if self.startPoint.Z < levelElevation and self.endPoint.Z > levelElevation + 0.01:
                 return True
             else:
@@ -637,7 +637,7 @@ class MepSplitter(ElementSplitter):
         startPoint = elementCurve.GetEndPoint(0).Z
         endPoint = elementCurve.GetEndPoint(1).Z
         for level in listOfLevels:
-            elevation = level.Elevation
+            elevation = level.ProjectElevation
             if ((elevation + 0.01 >= startPoint and elevation - 0.01 <= startPoint) or
             (elevation + 0.01 >= endPoint and elevation - 0.01 <= endPoint)):
                 levelIndex = listOfLevels.index(level)
