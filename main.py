@@ -540,10 +540,15 @@ class MepSplitter(ElementSplitter):
     def checkIfElementIsAlmostVertical(self):
         verticalLength = math.fabs(self.endPoint.Z - self.startPoint.Z)
         horizontalLength = math.sqrt(math.fabs(self.endPoint.X - self.startPoint.X)**2 + math.fabs(self.endPoint.Y - self.startPoint.Y)**2)
-        if horizontalLength/verticalLength <= 0.0001:
-            return True
-        else:
+        try:
+            if horizontalLength/verticalLength <= 0.0001:
+                return True
+            else:
+                return False
+        #In case if two elements are at the same elevation
+        except ZeroDivisionError:
             return False
+
 
     # checks style of a MEP element is it model from Top to Down or from Down to Top and assignes parameter
     def isStartPointUpOrDown(self, originalStart, originalEnd):
