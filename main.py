@@ -4,8 +4,8 @@ sysPath.append("C:\Program Files (x86)\IronPython 2.7\Lib")
 import math
 
 #import system
-import System
-from System.Collections.Generic import *
+#import System
+from System.Collections.Generic import List
 
 # Import DocumentManager and TransactionManager
 clr.AddReference("RevitServices")
@@ -16,7 +16,6 @@ from RevitServices.Transactions import TransactionManager
 # Import RevitAPI
 clr.AddReference("RevitAPI")
 import Autodesk.Revit.DB as db
-clr.AddReference("RevitNodes")
 doc = DocumentManager.Instance.CurrentDBDocument
 
 
@@ -704,18 +703,17 @@ def getlistOfElements():
         return [IN[0]]
 
 levels = getListOfLevelIds(doc)
-for element in getlistOfElements():
-    # converts dynamo element to revit element
+for elementToSplit in getlistOfElements():
+    # converts dynamo element (elementToSplit) to revit element
     try:
-    	revitElement = doc.GetElement(db.ElementId(element.Id))
+    	revitElement = doc.GetElement(db.ElementId(elementToSplit.Id))
     except AttributeError:
     	continue    	
-    # gets revit element type
+    # Tries to get revit element type
     try:
         elementType = revitElement.GetType()
     except TypeError:
         elementType = None
-    
     element = None
     if elementType == db.Wall:
         element = WallSplitter(doc, revitElement, levels)
