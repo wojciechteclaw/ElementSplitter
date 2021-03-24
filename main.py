@@ -1,6 +1,4 @@
 import clr
-clr.AddReference('ProtoGeometry')
-from Autodesk.DesignScript.Geometry import *
 from sys import path as sysPath
 sysPath.append("C:\Program Files (x86)\IronPython 2.7\Lib")
 import math
@@ -484,9 +482,8 @@ class SlantedColumnSplitter(ColumnSplitter):
                 
             except:
                 pass
-        if IN[2]:
-            self.createGroup()
-
+            if IN[2]:
+                self.createGroup()
 
 
 # Abstract class for MEP elements which is inherited by certain MEP categories
@@ -494,18 +491,19 @@ class MepSplitter(ElementSplitter):
     
     # Splits slanted column
     def splitElement(self):
-        elementsToAssignProperLevel = list()
         levels = self.convertListOfLevelIdsToElements()
         if not self.isElementPossibleToSplit():
             return None
         elementToSplit = self.element
-        elementsToAssignProperLevel.append(elementToSplit)
+        self.listOfElements.append(self.element)
         for level in levels:
             levelElevation = level.ProjectElevation
             if elementToSplit == None:
                 break
             elif levelElevation > self.startPoint.Z and levelElevation + 0.01 < self.endPoint.Z:
                 elementToSplit = self.splitVerticalElement(elementToSplit, level, levels)
+        if IN[2]:
+            self.createGroup()
 
     # Assign levelId to each of MEP element in the list. levelId is assinged to level parameter of an element
     def assignLevelsToElements(self, elements, levels):
@@ -655,7 +653,7 @@ class MepSplitter(ElementSplitter):
         if newElement != None:
             self.assignProperLevelToElement(newElement, listOfLevels)
         if newElement != None:
-            self.addUnion(newElement, elementToSplit)
+            self.listOfElements.append(self.addUnion(newElement, elementToSplit))
 
 
 # Class for duct elements
@@ -669,6 +667,7 @@ class DuctSplitter(MepSplitter):
             newElement = self.doc.GetElement(newElementId)
         except:
             newElement = None
+        self.listOfElements.append(newElement)
         TransactionManager.Instance.TransactionTaskDone()
         self.assignElementsToLevelsAndAddUnion(newElement, elementToSplit, listOfLevels)
         if self.elementLocationStyle == "TopToDown":
@@ -686,6 +685,7 @@ class PipeSplitter(MepSplitter):
             newElement = self.doc.GetElement(newElementId)
         except:
             newElement = None
+        self.listOfElements.append(newElement)
         TransactionManager.Instance.TransactionTaskDone()
         self.assignElementsToLevelsAndAddUnion(newElement, elementToSplit, listOfLevels)
         if self.elementLocationStyle == "TopToDown":
