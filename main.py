@@ -531,7 +531,7 @@ class MepSplitter(ElementSplitter):
         endPoint = tempElementCurve.GetEndPoint(1)
         startPoint = tempElementCurve.GetEndPoint(0)
         vectorFromStartPointToEndPoint = endPoint - startPoint
-        proportionOfDistanceToCutLocation = math.fabs(startPoint.Z - cutLevel.Elevation)/startPoint.DistanceTo(endPoint)
+        proportionOfDistanceToCutLocation = math.fabs(startPoint.Z - cutLevel.ProjectElevation)/startPoint.DistanceTo(endPoint)
         cutPoint = startPoint + vectorFromStartPointToEndPoint * proportionOfDistanceToCutLocation
         return self.cutElementAndAssignUnionsPlusLevels(elementToSplit, cutPoint, listOfLevels)
 
