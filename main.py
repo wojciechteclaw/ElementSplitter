@@ -495,13 +495,13 @@ class SlantedColumnSplitter(ColumnSplitter):
 
 
 # Abstract class for MEP elements which is inherited by certain MEP categories
-class MepSplitter(ElementSplitter):
+class PipesDuctsSplitter(ElementSplitter):
 	
 	# Splits slanted column
 	def splitElement(self):
 		levels = self.convertListOfLevelIdsToElements()
 		if not self.isElementPossibleToSplit():
-			return None
+			self.setBaseLevelToElement(self.element, levels)
 		elementToSplit = self.element
 		self.listOfElements.append(self.element)
 		for level in levels:
@@ -525,7 +525,6 @@ class MepSplitter(ElementSplitter):
 			elementStartPoint = elementCurve.GetEndPoint(0)
 		else:
 			elementStartPoint = elementCurve.GetEndPoint(1)
-		return elementCurve.GetEndPoint(0)
 		for level in levels:
 			elevation = level.ProjectElevation
 			if levels.index(level) == 0 and elementStartPoint < elevation:
@@ -554,7 +553,6 @@ class MepSplitter(ElementSplitter):
 		#In case if two elements are at the same elevation
 		except ZeroDivisionError:
 			return False
-
 
 	# checks style of a MEP element is it model from Top to Down or from Down to Top and assignes parameter
 	def isStartPointUpOrDown(self, originalStart, originalEnd):
@@ -664,7 +662,7 @@ class MepSplitter(ElementSplitter):
 
 
 # Class for duct elements
-class DuctSplitter(MepSplitter):
+class DuctSplitter(PipesDuctsSplitter):
 
 	# Function splitting a duct into 2 elements
 	def cutElementAndAssignUnionsPlusLevels(self, elementToSplit, cutPoint, listOfLevels):
@@ -682,7 +680,7 @@ class DuctSplitter(MepSplitter):
 		return elementToSplit
 
 # Class for pipes (plumbing elements - not Conduits)
-class PipeSplitter(MepSplitter):
+class PipeSplitter(PipesDuctsSplitter):
 
 	# Function splitting a duct into 2 elements
 	def cutElementAndAssignUnionsPlusLevels(self, elementToSplit, cutPoint, listOfLevels):
