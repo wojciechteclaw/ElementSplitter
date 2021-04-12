@@ -43,8 +43,8 @@ def getListOfLevelIds(doc):
 # Dedicated class for opening which is hosted in a wall
 class WallOpenings():
 
-	def __init__(self, levelsList, wall, doc):
-		self.levels = levelsList
+	def __init__(self, levels, wall, doc):
+		self.levels = levels
 		self.wall = wall
 		self.doc = doc
 		self.getListOfOpeningsHostedInWall()
@@ -105,10 +105,10 @@ class WallOpenings():
 # Abstract class - main class
 class ElementSplitter():
 
-	def __init__(self, doc, element, levelsList):
+	def __init__(self, doc, element):
 		self.doc = doc
 		self.element = element
-		self.levelsList = levelsList
+		self.levelsList = getListOfLevelIds(doc)
 		self.listOfElements = list()
 	
 	# Lanuch function which tries to modify offsets
@@ -495,9 +495,9 @@ class SlantedColumnSplitter(ColumnSplitter):
 
 
 # Abstract class for MEP elements which is inherited by certain MEP categories
-class PipesDuctsSplitter(ElementSplitter):
+class MepElement(ElementSplitter):
 	
-	# Splits slanted column
+	# Splits elements by levels (if applicable)
 	def splitElement(self):
 		levels = self.convertListOfLevelIdsToElements()
 		if not self.isElementPossibleToSplit():
@@ -662,7 +662,7 @@ class PipesDuctsSplitter(ElementSplitter):
 
 
 # Class for duct elements
-class DuctSplitter(PipesDuctsSplitter):
+class DuctSplitter(MepElement):
 
 	# Function splitting a duct into 2 elements
 	def cutElementAndAssignUnionsPlusLevels(self, elementToSplit, cutPoint, listOfLevels):
@@ -680,7 +680,7 @@ class DuctSplitter(PipesDuctsSplitter):
 		return elementToSplit
 
 # Class for pipes (plumbing elements - not Conduits)
-class PipeSplitter(PipesDuctsSplitter):
+class PipeSplitter(MepElement):
 
 	# Function splitting a duct into 2 elements
 	def cutElementAndAssignUnionsPlusLevels(self, elementToSplit, cutPoint, listOfLevels):
@@ -698,6 +698,28 @@ class PipeSplitter(PipesDuctsSplitter):
 		return elementToSplit
 
 
+class ElectricalElementsSplitter(MepElement):
+	
+	# Function splitting a duct into 2 elements
+	def cutElementAndAssignUnionsPlusLevels(self, elementToSplit, cutPoint, listOfLevels):
+		TransactionManager.Instance.EnsureInTransaction(self.doc)
+		self.element.LookupParameter("Comments").Set("Test")
+		# newLine = db.Line.CreateBound(self.element.Location.Curve.GetEndPoint(0), cutPoint)
+		# self.element.Location = newLine
+		# self.element.Location
+		# try:
+		# 	newElementId = db.Mechanical.MechanicalUtils.BreakCurve(self.doc, elementToSplit.Id, cutPoint)
+		# 	newElement = self.doc.GetElement(newElementId)
+		# except:
+		# 	newElement = None
+		# self.listOfElements.append(newElement)
+		TransactionManager.Instance.TransactionTaskDone()
+		# self.assignElementsToLevelsAndAddUnion(newElement, elementToSplit, listOfLevels)
+		# if self.elementLocationStyle == "TopToDown":
+		# 	return newElement
+		return elementToSplit
+
+
 def getlistOfElements():
 	try:
 		numberOfElements = len(IN[0])
@@ -708,7 +730,7 @@ def getlistOfElements():
 	except:
 		return [IN[0]]
 
-levels = getListOfLevelIds(doc)
+
 for elementToSplit in getlistOfElements():
 	# converts dynamo element (elementToSplit) to revit element
 	try:
@@ -722,17 +744,20 @@ for elementToSplit in getlistOfElements():
 		elementType = None
 	element = None
 	if elementType == db.Wall:
-		element = WallSplitter(doc, revitElement, levels)
+		element = WallSplitter(doc, revitElement)
 	elif elementType == db.FamilyInstance:
 		structuralType = revitElement.StructuralType
 		if structuralType == db.Structure.StructuralType.Column and not revitElement.IsSlantedColumn:
-			element = ColumnSplitter(doc, revitElement, levels)
+			element = ColumnSplitter(doc, revitElement)
 		elif structuralType == db.Structure.StructuralType.Column and revitElement.IsSlantedColumn:
-			element = SlantedColumnSplitter(doc, revitElement, levels)
+			element = SlantedColumnSplitter(doc, revitElement)
 	elif elementType == db.Mechanical.Duct:
-		element = DuctSplitter(doc, revitElement, levels)
+		element = DuctSplitter(doc, revitElement)
 	elif elementType == db.Plumbing.Pipe:
-		element = PipeSplitter(doc, revitElement, levels)
-	if element != None:
-		element.splitElement()
-OUT = "done"
+		element = PipeSplitter(doc, revitElement)
+	elif elementType == db.Electrical.CableTray:
+		element = ElectricalElementsSplitter(doc, revitElement)
+	# if element != None:
+	# 	element.splitElement()
+# OUT = "done"
+OUT = element.element.Location.Curve
