@@ -3,9 +3,8 @@ from sys import path as sysPath
 sysPath.append("C:\Program Files (x86)\IronPython 2.7\Lib")
 import math
 
-#import system
-#import System
-from System.Collections.Generic import List
+#Import List[Type](iterable)
+from System.Collections.Generic import List as sysList
 
 # Import DocumentManager and TransactionManager
 clr.AddReference("RevitServices")
@@ -148,7 +147,7 @@ class ElementSplitter():
         lst = list()
         for el in self.listOfElements:
             lst.append(el.Id)
-        newList = List[db.ElementId](lst)
+        newList = sysList[db.ElementId](lst)
         TransactionManager.Instance.EnsureInTransaction(self.doc)
         self.doc.Create.NewGroup(newList)
         TransactionManager.Instance.TransactionTaskDone()
