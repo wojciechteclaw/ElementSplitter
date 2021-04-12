@@ -700,24 +700,27 @@ class PipeSplitter(MepElement):
 
 class ElectricalElementsSplitter(MepElement):
 	
+	# Copy element and get new one
+	def getElementCopy(self):
+		new = db.ElementTransformUtils.CopyElement(self.doc, self.element.Id, db.XYZ(0, 0, 0))
+		newElementId = list(new)[0]
+		return self.doc.GetElement(newElementId)
+
 	# Function splitting a duct into 2 elements
 	def cutElementAndAssignUnionsPlusLevels(self, elementToSplit, cutPoint, listOfLevels):
 		TransactionManager.Instance.EnsureInTransaction(self.doc)
-		self.element.LookupParameter("Comments").Set("Test")
-		# newLine = db.Line.CreateBound(self.element.Location.Curve.GetEndPoint(0), cutPoint)
-		# self.element.Location = newLine
-		# self.element.Location
-		# try:
-		# 	newElementId = db.Mechanical.MechanicalUtils.BreakCurve(self.doc, elementToSplit.Id, cutPoint)
-		# 	newElement = self.doc.GetElement(newElementId)
-		# except:
-		# 	newElement = None
-		# self.listOfElements.append(newElement)
+		oldLineWithModification = db.Line.CreateBound(cutPoint, self.element.Location.Curve.GetEndPoint(1))
+		newLine = db.Line.CreateBound(self.element.Location.Curve.GetEndPoint(0), cutPoint)
+		newElement = self.getElementCopy()
+		elementToSplit.Location.Curve = oldLineWithModification
+		newElement.Location.Curve = newLine
+
+		# For feature development
+		self.assignElementsToLevelsAndAddUnion(elementToSplit, newElement, listOfLevels)
 		TransactionManager.Instance.TransactionTaskDone()
-		# self.assignElementsToLevelsAndAddUnion(newElement, elementToSplit, listOfLevels)
-		# if self.elementLocationStyle == "TopToDown":
-		# 	return newElement
 		return elementToSplit
+
+		# Add unions to function
 
 
 def getlistOfElements():
@@ -755,9 +758,8 @@ for elementToSplit in getlistOfElements():
 		element = DuctSplitter(doc, revitElement)
 	elif elementType == db.Plumbing.Pipe:
 		element = PipeSplitter(doc, revitElement)
-	elif elementType == db.Electrical.CableTray:
+	elif elementType == db.Electrical.CableTray or elementType == db.Electrical.Conduit:
 		element = ElectricalElementsSplitter(doc, revitElement)
-	# if element != None:
-	# 	element.splitElement()
-# OUT = "done"
-OUT = element.element.Location.Curve
+	if element != None:
+		element.splitElement()
+OUT = "done", revitElement.GetType()
