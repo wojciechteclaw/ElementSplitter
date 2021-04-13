@@ -22,7 +22,7 @@ class ConfigSettings:
 	# ratio of verticalness of an element
 	verticalRatio = 0.0001
 	#Tolerance of level location
-	elevationTolerance = 0.01
+	elevationTolerance = 0.02
 	# bottom pipe level offset when element is not splitted when difference is less
 	# in feet
 	offsetToleranceMEP = 0.5
@@ -533,12 +533,8 @@ class MepElement(ElementSplitter):
 	# Splits element but calculated point. Point Z coordinate is calculate base on level
 	def splitVerticalElement(self, elementToSplit, cutLevel, listOfLevels):
 		tempElementCurve = elementToSplit.Location.Curve
-		if self.elementLocationStyle == "TopToDown":
-			endPoint = tempElementCurve.GetEndPoint(0)
-			startPoint = tempElementCurve.GetEndPoint(1)
-		else:
-			endPoint = tempElementCurve.GetEndPoint(1)
-			startPoint = tempElementCurve.GetEndPoint(0)
+		endPoint = tempElementCurve.GetEndPoint(1)
+		startPoint = tempElementCurve.GetEndPoint(0)
 		vectorFromStartPointToEndPoint = endPoint - startPoint
 		proportionOfDistanceToCutLocation = math.fabs(startPoint.Z - cutLevel.ProjectElevation)/startPoint.DistanceTo(endPoint)
 		cutPoint = startPoint + vectorFromStartPointToEndPoint * proportionOfDistanceToCutLocation
@@ -559,7 +555,10 @@ class MepElement(ElementSplitter):
 			return False
 
 	# checks style of a MEP element is it model from Top to Down or from Down to Top and assignes parameter
-	def isStartPointUpOrDown(self, originalStart, originalEnd):
+	def setElementModelingStyle(self):
+		location = self.element.Location.Curve
+		originalStart = location.GetEndPoint(0)
+		originalEnd = location.GetEndPoint(1)
 		if originalStart.Z > originalEnd.Z:
 			self.elementLocationStyle = "TopToDown"
 			self.startPoint = originalEnd
@@ -571,8 +570,7 @@ class MepElement(ElementSplitter):
 
 	# checks if element goes trought more than
 	def isElementPossibleToSplit(self):
-		elementCurve = self.element.Location.Curve
-		self.isStartPointUpOrDown(elementCurve.GetEndPoint(0), elementCurve.GetEndPoint(1))
+		self.setElementModelingStyle()
 		if not self.checkIfElementIsAlmostVertical():
 			return False
 		startPointLevelIndex = None
@@ -638,17 +636,27 @@ class MepElement(ElementSplitter):
 				if newConnector.Origin.IsAlmostEqualTo(oldConnector.Origin):
 					return self.createNewUnion(newConnector, oldConnector)
 
+	def getStartEndZCoordinateTuple(self, element):
+		elementCurve = element.Location.Curve
+		point_1 = elementCurve.GetEndPoint(0).Z
+		point_2 = elementCurve.GetEndPoint(1).Z
+		if point_1 < point_2:
+			return (point_1, point_2)
+		else:
+			return (point_2, point_1)
+
 	# Assigns element to proper level
 	def assignProperLevelToElement(self, element, listOfLevels):
-		elementCurve = element.Location.Curve
-		startPoint = elementCurve.GetEndPoint(0).Z
-		endPoint = elementCurve.GetEndPoint(1).Z
+		coordinates = self.getStartEndZCoordinateTuple(element)
+		startPoint = coordinates[0]
+		endPoint = coordinates[1]
 		for level in listOfLevels:
 			elevation = level.ProjectElevation
-			if ((elevation + ConfigSettings.elevationTolerance >= startPoint and elevation - ConfigSettings.elevationTolerance <= startPoint) or
-			(elevation + ConfigSettings.elevationTolerance >= endPoint and elevation - ConfigSettings.elevationTolerance <= endPoint)):
-				levelIndex = listOfLevels.index(level)
-				if levelIndex != 0 and not (startPoint >= elevation and endPoint >= elevation):
+			levelIndex = listOfLevels.index(level)
+			if elevation + ConfigSettings.elevationTolerance > startPoint and elevation - ConfigSettings.elevationTolerance < startPoint:
+				break
+			elif elevation + ConfigSettings.elevationTolerance > endPoint and elevation - ConfigSettings.elevationTolerance < endPoint:
+				if levelIndex != 0 and not (startPoint > elevation and endPoint >= elevation):
 					levelIndex = levelIndex - 1
 				break
 		self.setBaseConstraintLevelId(element, self.levelsList[levelIndex])
@@ -683,6 +691,7 @@ class DuctSplitter(MepElement):
 			return newElement
 		return elementToSplit
 
+
 # Class for pipes (plumbing elements - not Conduits)
 class PipeSplitter(MepElement):
 
@@ -708,27 +717,37 @@ class ElectricalElementsSplitter(MepElement):
 	def getElementCopy(self):
 		new = db.ElementTransformUtils.CopyElement(self.doc, self.element.Id, db.XYZ(0, 0, 0))
 		newElementId = list(new)[0]
-		return self.doc.GetElement(newElementId)
+		newElement = self.doc.GetElement(newElementId)
+		self.listOfElements.append(newElement)
+		return newElement
 
 	# Function splitting a duct into 2 elements
 	def cutElementAndAssignUnionsPlusLevels(self, elementToSplit, cutPoint, listOfLevels):
 		TransactionManager.Instance.EnsureInTransaction(self.doc)
 		if self.elementLocationStyle == "TopToDown":
-			oldLineWithModification = db.Line.CreateBound(self.element.Location.Curve.GetEndPoint(0), cutPoint)
-			newLine = db.Line.CreateBound(self.element.Location.Curve.GetEndPoint(1), cutPoint)
+			elementToSplitLine = db.Line.CreateBound(self.element.Location.Curve.GetEndPoint(0), cutPoint)
+			newElementLine = db.Line.CreateBound(self.element.Location.Curve.GetEndPoint(1), cutPoint)
 		else:
-			oldLineWithModification = db.Line.CreateBound(cutPoint, self.element.Location.Curve.GetEndPoint(1))
-			newLine = db.Line.CreateBound(self.element.Location.Curve.GetEndPoint(0), cutPoint)
+			elementToSplitLine = db.Line.CreateBound(cutPoint, self.element.Location.Curve.GetEndPoint(1))
+			newElementLine = db.Line.CreateBound(self.element.Location.Curve.GetEndPoint(0), cutPoint)
 		newElement = self.getElementCopy()
-		elementToSplit.Location.Curve = oldLineWithModification
-		newElement.Location.Curve = newLine
+		elementToSplit.Location.Curve = elementToSplitLine
+		newElement.Location.Curve = newElementLine
+		newElement.LookupParameter('Comments').Set("test")
 
 		# For feature development
-		# self.assignElementsToLevelsAndAddUnion(elementToSplit, newElement, listOfLevels)
+		self.assignElementsToLevelsAndAddUnion(elementToSplit, newElement, listOfLevels)
 		TransactionManager.Instance.TransactionTaskDone()
 		return elementToSplit
 
-		# Add unions to function
+	def assignElementsToLevelsAndAddUnion(self, newElement, elementToSplit, listOfLevels):
+		if elementToSplit != None:
+			self.assignProperLevelToElement(elementToSplit, listOfLevels)
+		if newElement != None:
+			self.assignProperLevelToElement(newElement, listOfLevels)
+		if newElement != None:
+			# self.listOfElements.append(self.addUnion(newElement, elementToSplit))
+			pass
 
 
 def getlistOfElements():
