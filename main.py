@@ -533,8 +533,12 @@ class MepElement(ElementSplitter):
 	# Splits element but calculated point. Point Z coordinate is calculate base on level
 	def splitVerticalElement(self, elementToSplit, cutLevel, listOfLevels):
 		tempElementCurve = elementToSplit.Location.Curve
-		endPoint = tempElementCurve.GetEndPoint(1)
-		startPoint = tempElementCurve.GetEndPoint(0)
+		if self.elementLocationStyle == "TopToDown":
+			endPoint = tempElementCurve.GetEndPoint(0)
+			startPoint = tempElementCurve.GetEndPoint(1)
+		else:
+			endPoint = tempElementCurve.GetEndPoint(1)
+			startPoint = tempElementCurve.GetEndPoint(0)
 		vectorFromStartPointToEndPoint = endPoint - startPoint
 		proportionOfDistanceToCutLocation = math.fabs(startPoint.Z - cutLevel.ProjectElevation)/startPoint.DistanceTo(endPoint)
 		cutPoint = startPoint + vectorFromStartPointToEndPoint * proportionOfDistanceToCutLocation
@@ -709,14 +713,18 @@ class ElectricalElementsSplitter(MepElement):
 	# Function splitting a duct into 2 elements
 	def cutElementAndAssignUnionsPlusLevels(self, elementToSplit, cutPoint, listOfLevels):
 		TransactionManager.Instance.EnsureInTransaction(self.doc)
-		oldLineWithModification = db.Line.CreateBound(cutPoint, self.element.Location.Curve.GetEndPoint(1))
-		newLine = db.Line.CreateBound(self.element.Location.Curve.GetEndPoint(0), cutPoint)
+		if self.elementLocationStyle == "TopToDown":
+			oldLineWithModification = db.Line.CreateBound(self.element.Location.Curve.GetEndPoint(0), cutPoint)
+			newLine = db.Line.CreateBound(self.element.Location.Curve.GetEndPoint(1), cutPoint)
+		else:
+			oldLineWithModification = db.Line.CreateBound(cutPoint, self.element.Location.Curve.GetEndPoint(1))
+			newLine = db.Line.CreateBound(self.element.Location.Curve.GetEndPoint(0), cutPoint)
 		newElement = self.getElementCopy()
 		elementToSplit.Location.Curve = oldLineWithModification
 		newElement.Location.Curve = newLine
 
 		# For feature development
-		self.assignElementsToLevelsAndAddUnion(elementToSplit, newElement, listOfLevels)
+		# self.assignElementsToLevelsAndAddUnion(elementToSplit, newElement, listOfLevels)
 		TransactionManager.Instance.TransactionTaskDone()
 		return elementToSplit
 
