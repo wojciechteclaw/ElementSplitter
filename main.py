@@ -108,7 +108,7 @@ class ElementSplitter():
 	def __init__(self, doc, element):
 		self.doc = doc
 		self.element = element
-		self.levelsList = getListOfLevelIds(doc)
+		self.levelIdsList = getListOfLevelIds(doc)
 		self.listOfElements = list()
 	
 	# Lanuch function which tries to modify offsets
@@ -148,8 +148,8 @@ class ElementSplitter():
 			element = self.doc.GetElement(self.copyElement()[0])
 			self.setBaseOffsetValue(element, 0)
 			self.setTopOffsetValue(element, self.getTopOffsetValue())
-			self.setBaseConstraintLevelId(element, self.levelsList[index + 1])
-			self.setTopConstraintLevelId(element, self.levelsList[index + 1])
+			self.setBaseConstraintLevelId(element, self.levelIdsList[index + 1])
+			self.setTopConstraintLevelId(element, self.levelIdsList[index + 1])
 			self.additionalModificationOfElement(element)
 			return element
 
@@ -186,8 +186,8 @@ class ElementSplitter():
 					self.setBaseOffsetValue(elementToChange, 0)
 					self.setTopOffsetValue(elementToChange, 0)
 					self.setElementData(elementToChange)
-				self.setBaseConstraintLevelId(elementToChange, self.levelsList[i])
-				self.setTopConstraintLevelId(elementToChange, self.levelsList[i+1])
+				self.setBaseConstraintLevelId(elementToChange, self.levelIdsList[i])
+				self.setTopConstraintLevelId(elementToChange, self.levelIdsList[i+1])
 				self.additionalModificationOfElement(elementToChange)
 				self.listOfElements.append(elementToChange)
 			self.joinElementsInList()
@@ -231,7 +231,7 @@ class ElementSplitter():
 	# Converts list of levels ids to elements
 	def convertListOfLevelIdsToElements(self):
 		lst = list()
-		for levelId in self.levelsList:
+		for levelId in self.levelIdsList:
 			lst.append(self.doc.GetElement(levelId))
 		return lst
 
@@ -272,7 +272,7 @@ class ElementSplitter():
 		# Top is constrained to level
 		else:
 			newOffset = self.getTopOffsetValue() + differenceInOffset
-		newLevelId = self.levelsList[newLevelIndex]
+		newLevelId = self.levelIdsList[newLevelIndex]
 		TransactionManager.Instance.EnsureInTransaction(doc)
 		self.setTopConstraintLevelId(self.element, newLevelId)
 		self.setTopOffsetValue(self.element, newOffset)
@@ -301,7 +301,7 @@ class ElementSplitter():
 	def setNewBaseBoundries(self, levelIndex, newLevelIndex):
 		differenceInOffset = self.getDistanceBetweenLevels(levelIndex, newLevelIndex)
 		newOffset = self.getBaseOffsetValue() + differenceInOffset
-		newLevelId = self.levelsList[newLevelIndex]
+		newLevelId = self.levelIdsList[newLevelIndex]
 		TransactionManager.Instance.EnsureInTransaction(doc)
 		self.setBaseConstraintLevelId(self.element, newLevelId)
 		self.setBaseOffsetValue(self.element, newOffset)
@@ -310,12 +310,12 @@ class ElementSplitter():
 	# Returns index of top level on the list of levels
 	def getIndexOfTopLevel(self):
 		endLevelId = self.getTopConstraintLevelId()
-		return self.levelsList.index(endLevelId)
+		return self.levelIdsList.index(endLevelId)
 
 	# Returns index of base level on the list of levels
 	def getIndexOfBaseLevel(self):
 		startLevelId = self.getBaseConstraintLevelId()
-		return self.levelsList.index(startLevelId)
+		return self.levelIdsList.index(startLevelId)
 
 
 # Class for walls
@@ -363,7 +363,7 @@ class WallSplitter(ElementSplitter):
 
 	# Due to openings neccessary to develop additional function
 	def additionalModificationOfElement(self, elementToChange):
-		objectOfOpenings = WallOpenings(self.levelsList, elementToChange, self.doc)
+		objectOfOpenings = WallOpenings(self.levelIdsList, elementToChange, self.doc)
 		objectOfOpenings.deleteOpeningsNotInWallRange()
 
 
@@ -445,11 +445,11 @@ class SlantedColumnSplitter(ColumnSplitter):
 	# Splits proper levels for elements which has offset different than 0
 	def setOffsetForLastElement(self, element, index, coefficient):
 		if round(coefficient, 3) > 0 and round(coefficient, 3) < 1:
-			self.setBaseConstraintLevelId(element, self.levelsList[index + 1])
-			self.setTopConstraintLevelId(element, self.levelsList[index + 1])
+			self.setBaseConstraintLevelId(element, self.levelIdsList[index + 1])
+			self.setTopConstraintLevelId(element, self.levelIdsList[index + 1])
 		else:
-			self.setBaseConstraintLevelId(element, self.levelsList[index])
-			self.setTopConstraintLevelId(element, self.levelsList[index + 1])
+			self.setBaseConstraintLevelId(element, self.levelIdsList[index])
+			self.setTopConstraintLevelId(element, self.levelIdsList[index + 1])
 	
 	# splits slantedColumnIntoTwoElements
 	def splitColumnIntoTwoElements(self, element, index, coefficinet):
@@ -458,8 +458,8 @@ class SlantedColumnSplitter(ColumnSplitter):
 				TransactionManager.Instance.EnsureInTransaction(self.doc)
 				elementBeingSplit = self.doc.GetElement(element.Split(coefficinet))
 				TransactionManager.Instance.TransactionTaskDone()
-				self.setBaseConstraintLevelId(oldElement, self.levelsList[index])
-				self.setTopConstraintLevelId(oldElement, self.levelsList[index + 1])
+				self.setBaseConstraintLevelId(oldElement, self.levelIdsList[index])
+				self.setTopConstraintLevelId(oldElement, self.levelIdsList[index + 1])
 				self.setElementData(oldElement)
 				return elementBeingSplit
 		else:
@@ -476,11 +476,11 @@ class SlantedColumnSplitter(ColumnSplitter):
 			for i in range(startLevelIndex, endLevelIndex):
 				splitedElementLength = self.getElementVerticalHeight(elementBeingSplit)
 				if i == startLevelIndex:
-					segmentLen = self.doc.GetElement(self.levelsList[i+1]).Elevation - self.doc.GetElement(self.levelsList[i]).Elevation - self.getBaseOffsetValue()
+					segmentLen = self.doc.GetElement(self.levelIdsList[i+1]).Elevation - self.doc.GetElement(self.levelIdsList[i]).Elevation - self.getBaseOffsetValue()
 				elif i == endLevelIndex - 1:
-					segmentLen = self.doc.GetElement(self.levelsList[i+1]).Elevation - self.doc.GetElement(self.levelsList[i]).Elevation + self.getTopOffsetValue()
+					segmentLen = self.doc.GetElement(self.levelIdsList[i+1]).Elevation - self.doc.GetElement(self.levelIdsList[i]).Elevation + self.getTopOffsetValue()
 				else:
-					segmentLen = self.doc.GetElement(self.levelsList[i+1]).Elevation - self.doc.GetElement(self.levelsList[i]).Elevation
+					segmentLen = self.doc.GetElement(self.levelIdsList[i+1]).Elevation - self.doc.GetElement(self.levelIdsList[i]).Elevation
 				coefficientOfSplitting = segmentLen/splitedElementLength
 				elementBeingSplit = self.splitColumnIntoTwoElements(elementBeingSplit, i, coefficientOfSplitting)
 				self.listOfElements.append(elementBeingSplit)
@@ -528,7 +528,7 @@ class MepElement(ElementSplitter):
 		for level in levels:
 			elevation = level.ProjectElevation
 			if levels.index(level) == 0 and elementStartPoint < elevation:
-				self.setBaseConstraintLevelId(element, self.levelsList[0])
+				self.setBaseConstraintLevelId(element, self.levelIdsList[0])
 
 	# Splits element but calculated point. Point Z coordinate is calculate base on level
 	def splitVerticalElement(self, elementToSplit, cutLevel, listOfLevels):
@@ -610,7 +610,7 @@ class MepElement(ElementSplitter):
 	# Sets new base boundry for element
 	def setNewBaseBoundries(self, levelIndex, newLevelIndex):
 		differenceInOffset = self.getDistanceBetweenLevels(levelIndex, newLevelIndex)
-		newLevelId = self.levelsList[newLevelIndex]
+		newLevelId = self.levelIdsList[newLevelIndex]
 		TransactionManager.Instance.EnsureInTransaction(doc)
 		self.setBaseConstraintLevelId(self.element, newLevelId)
 		TransactionManager.Instance.TransactionTaskDone()
@@ -659,7 +659,7 @@ class MepElement(ElementSplitter):
 				if levelIndex != 0 and not (startPoint > elevation and endPoint >= elevation):
 					levelIndex = levelIndex - 1
 				break
-		self.setBaseConstraintLevelId(element, self.levelsList[levelIndex])
+		self.setBaseConstraintLevelId(element, self.levelIdsList[levelIndex])
 
 	# function assings level to elements and adds union
 	# it's possible to opimize: not set parameters to splitting element after
@@ -736,7 +736,16 @@ class ElectricalElementsSplitter(MepElement):
 		self.assignElementsToLevelsAndAddUnion(elementToSplit, newElement, listOfLevels)
 		TransactionManager.Instance.TransactionTaskDone()
 		return elementToSplit
-
+	
+	# Work in progress
+	def assignElementsToLevelsAndAddUnion(self, newElement, elementToSplit, listOfLevels):
+		if elementToSplit != None:
+			self.assignProperLevelToElement(elementToSplit, listOfLevels)
+		if newElement != None:
+			self.assignProperLevelToElement(newElement, listOfLevels)
+		if newElement != None:
+			pass
+			# self.listOfElements.append(self.addUnion(newElement, elementToSplit))
 
 def getlistOfElements():
 	try:
