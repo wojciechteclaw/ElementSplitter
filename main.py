@@ -17,6 +17,7 @@ clr.AddReference("RevitAPI")
 import Autodesk.Revit.DB as db
 doc = DocumentManager.Instance.CurrentDBDocument
 
+# Setting of tolerances
 class ConfigSettings:
 	
 	# ratio of verticalness of an element
@@ -205,7 +206,6 @@ class ElementSplitter():
 			except:
 				pass
 		TransactionManager.Instance.TransactionTaskDone()
-
 
 	# Adds Additional modification to element or its subelements
 	def additionalModificationOfElement(self, elementToChange):
@@ -500,6 +500,7 @@ class MepElement(ElementSplitter):
 	
 	# Splits elements by levels (if applicable)
 	def splitElement(self):
+		self.getConnectedElements()
 		if not self.isElementPossibleToSplit():
 			self.setBaseLevelToElement(self.element)
 		elementToSplit = self.element
@@ -512,6 +513,17 @@ class MepElement(ElementSplitter):
 				elementToSplit = self.splitVerticalElement(elementToSplit, level)
 		if IN[2]:
 			self.createGroup()
+		# Additional method dedicated for conection of electrical elements due to lack of breakCurve method for electrical elements
+		elementClass = self.element.GetType()
+		if elementClass == db.Electrical.CableTray or elementClass == db.Electrical.Conduit:
+			self.connectElements()
+
+	def connectElements(self):
+		pass
+	# Implementation in ElectricalElementsSplitter 
+
+	def getConnectedElements(self):
+
 
 	# Assign levelId to each of MEP element in the list. levelId is assinged to level parameter of an element
 	def assignLevelsToElements(self, elements):
@@ -736,15 +748,22 @@ class ElectricalElementsSplitter(MepElement):
 		TransactionManager.Instance.TransactionTaskDone()
 		return elementToSplit
 	
-	# Work in progress
+	# There is no way to predict location of union in cableTrays, that is why 
+	# decided to implement additional functionality - connectElements, which does it
 	def assignElementsToLevelsAndAddUnion(self, newElement, elementToSplit):
 		if elementToSplit != None:
 			self.assignProperLevelToElement(elementToSplit)
 		if newElement != None:
 			self.assignProperLevelToElement(newElement)
-		if newElement != None:
-			pass
-			# self.listOfElements.append(self.addUnion(newElement, elementToSplit))
+	def connectElements(self):
+		pass
+		# el = UnwrapElement(IN[0])
+		# cn = list(el.ConnectorManager.Connectors)[1]
+		# references = el.ConnectorManager.Lookup(1).AllRefs
+		# lst = list()
+		# for i in references:
+		# 	lst.append(i.Owner)
+
 
 def getlistOfElements():
 	try:
