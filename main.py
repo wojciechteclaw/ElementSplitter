@@ -733,21 +733,9 @@ class ElectricalElementsSplitter(MepElement):
 		newElement = self.getElementCopy()
 		elementToSplit.Location.Curve = elementToSplitLine
 		newElement.Location.Curve = newElementLine
-		newElement.LookupParameter('Comments').Set("test")
-
-		# For feature development
 		self.assignElementsToLevelsAndAddUnion(elementToSplit, newElement, listOfLevels)
 		TransactionManager.Instance.TransactionTaskDone()
 		return elementToSplit
-
-	def assignElementsToLevelsAndAddUnion(self, newElement, elementToSplit, listOfLevels):
-		if elementToSplit != None:
-			self.assignProperLevelToElement(elementToSplit, listOfLevels)
-		if newElement != None:
-			self.assignProperLevelToElement(newElement, listOfLevels)
-		if newElement != None:
-			# self.listOfElements.append(self.addUnion(newElement, elementToSplit))
-			pass
 
 
 def getlistOfElements():
