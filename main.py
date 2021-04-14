@@ -19,7 +19,7 @@ doc = DocumentManager.Instance.CurrentDBDocument
 
 # Static class for settings of parameters
 class Settings:
-    	
+
     # Ratio of verticalness of an element. If condition doesn't fulfill the condition won't be splitted (no unit)
 	VERTICAL_RATIO = 0.0001
 
@@ -29,7 +29,6 @@ class Settings:
 	# Offset of start point from level elevation when elements is not splitted (in feets). Value can't be less than 
 	# the length of longest union used in MEP models.
 	OFFSET_TOLERANCE = 0.5
-
 
 # functions collecting side elements
 def getListOfLevelIds(doc):
@@ -596,13 +595,11 @@ class MEPElementSplitter(ElementSplitter):
 			self.startPoint = originalStart
 			self.endPoint = originalEnd
 
-	# checks if element goes trought more than
+	# Checks if elements is possible to split (if cuts at least one level)
 	def isElementPossibleToSplit(self):
 		self.setElementModelingStyle()
 		if not self.checkIfElementIsAlmostVertical():
 			return False
-		startPointLevelIndex = None
-		endPointLevelIndex = None
 		for level in self.listLevels:
 			levelElevation = level.ProjectElevation
 			if self.startPoint.Z < levelElevation and self.endPoint.Z > levelElevation + Settings.ELEVATION_TOL:
@@ -612,10 +609,6 @@ class MEPElementSplitter(ElementSplitter):
 		if self.startPoint.Z < levelElevation and self.endPoint.Z > levelElevation + Settings.ELEVATION_TOL:
 				return True
 		return False
-
-	# tries to modify element to set level as low as it is possible
-	# and reduce offset. Instead of situation: Level no 3 with offset -10m
-	# it changes elements base level ie. Level no 0 with offset -50cm 
 	
 	#GETTERS
 	# Returns base constraint levelId
@@ -634,7 +627,7 @@ class MEPElementSplitter(ElementSplitter):
 		TransactionManager.Instance.TransactionTaskDone()
 		return 
 
-	# Sets new base boundry for element
+	# Sets base level to an element
 	def setNewBaseBoundries(self, levelIndex, newLevelIndex):
 		offsetDifference = self.getDistanceBetweenLevels(levelIndex, newLevelIndex)
 		newLevelId = self.levelIdsList[newLevelIndex]
