@@ -507,13 +507,13 @@ class MEPElementSplitter(ElementSplitter):
 		if not self.isElementPossibleToSplit():
 			self.setBaseLevelToElement(self.element)
 		elementToSplit = self.element
-		self.listOfElements.append(self.element)
 		for level in self.listLevels:
 			levelElevation = level.ProjectElevation
 			if elementToSplit == None:
 				break
 			elif levelElevation > self.startPoint.Z + Settings.OFFSET_TOLERANCE and levelElevation + Settings.ELEVATION_TOL < self.endPoint.Z:
 				elementToSplit = self.splitVerticalElement(elementToSplit, level)
+		self.listOfElements.append(elementToSplit)
 		# Additional method dedicated for conection of electrical elements due to lack of breakCurve method for electrical elements
 		if self.element.GetType() == db.Electrical.CableTray or self.element.GetType() == db.Electrical.Conduit:
     			self.connectElements()
@@ -788,7 +788,10 @@ class ElectricalElementsSplitter(MEPElementSplitter):
 			connectorToCheck = sortedByLevel[connectorIndex + 1]
 			if mainConnector.Origin.IsAlmostEqualTo(connectorToCheck.Origin):
 				try:
-					self.createNewUnion(mainConnector, connectorToCheck)
+					if self.MODELING_STYLE == "TopToDown":
+						self.createNewUnion(connectorToCheck, mainConnector)
+					else:
+						self.createNewUnion(mainConnector, connectorToCheck)
 				except:
 					TransactionManager.Instance.EnsureInTransaction(self.doc)
 					mainConnector.ConnectTo(connectorToCheck)
