@@ -500,7 +500,11 @@ class SlantedColumnSplitter(ColumnSplitter):
 # Abstract class for MEP elements which is inherited by certain MEP categories
 class MEPElementSplitter(ElementSplitter):
 	
-	# Splits elements by levels (if applicable)
+	# Main function which splits an element into many elements with assigned level and parameters. For electrical
+	# element first think which must be done is disconnection of start and end connectors. In case of other
+	# instalation it is ommited. Than function checks if is it possible to split an element if so starts iteration
+	# trought list of levels to get all cut points - which are intersection points between level plane and line of
+	# an element
 	def splitElement(self):
 		self.getConnectedElements()
 		self.disconnectElement()
