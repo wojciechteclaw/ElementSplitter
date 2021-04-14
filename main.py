@@ -1,9 +1,9 @@
 import clr
+import math
 from sys import path as sysPath
 sysPath.append("C:\Program Files (x86)\IronPython 2.7\Lib")
-import math
 
-#Import List[Type](iterable)
+# For pupose of using List[Type](iterable) 
 from System.Collections.Generic import List as sysList
 
 # Import DocumentManager and TransactionManager
@@ -17,18 +17,20 @@ clr.AddReference("RevitAPI")
 import Autodesk.Revit.DB as db
 doc = DocumentManager.Instance.CurrentDBDocument
 
-# Setting of tolerances
+# Static class for settings of parameters
 class ConfigSettings:
-	
-	# ratio of verticalness of an element
-	verticalRatio = 0.0001
-	#Tolerance of level location
-	elevationTolerance = 0.02
-	# bottom pipe level offset when element is not splitted when difference is less
-	# in feet
-	offsetToleranceMEP = 0.5
-	
-	
+    	
+    # Ratio of verticalness of an element. If condition doesn't fulfill the condition won't be splitted (no unit)
+	VERTICAL_RATIO = 0.0001
+
+	# Tolerance of level location - don't use less than 0.001 (in feets)
+	ELEVATION_TOL = 0.01
+
+	# Offset of start point from level elevation when elements is not splitted (in feets). Value can't be less than 
+	# the length of longest union used in MEP models.
+	OFFSET_TOLERANCE = 0.5
+
+
 # functions collecting side elements
 def getListOfLevelIds(doc):
 	fltr = db.ElementCategoryFilter(db.BuiltInCategory.OST_Levels)
@@ -508,7 +510,7 @@ class MepElement(ElementSplitter):
 			levelElevation = level.ProjectElevation
 			if elementToSplit == None:
 				break
-			elif levelElevation > self.startPoint.Z + ConfigSettings.offsetToleranceMEP and levelElevation + ConfigSettings.elevationTolerance < self.endPoint.Z:
+			elif levelElevation > self.startPoint.Z + ConfigSettings.OFFSET_TOLERANCE and levelElevation + ConfigSettings.ELEVATION_TOL < self.endPoint.Z:
 				elementToSplit = self.splitVerticalElement(elementToSplit, level)
 		# Additional method dedicated for conection of electrical elements due to lack of breakCurve method for electrical elements
 		if self.element.GetType() == db.Electrical.CableTray or self.element.GetType() == db.Electrical.Conduit:
@@ -569,7 +571,7 @@ class MepElement(ElementSplitter):
 		verticalLength = math.fabs(self.endPoint.Z - self.startPoint.Z)
 		horizontalLength = math.sqrt(math.fabs(self.endPoint.X - self.startPoint.X)**2 + math.fabs(self.endPoint.Y - self.startPoint.Y)**2)
 		try:
-			if horizontalLength/verticalLength <= ConfigSettings.verticalRatio:
+			if horizontalLength/verticalLength <= ConfigSettings.VERTICAL_RATIO:
 				return True
 			else:
 				return False
@@ -600,11 +602,11 @@ class MepElement(ElementSplitter):
 		endPointLevelIndex = None
 		for level in self.listLevels:
 			levelElevation = level.ProjectElevation
-			if self.startPoint.Z < levelElevation and self.endPoint.Z > levelElevation + ConfigSettings.elevationTolerance:
+			if self.startPoint.Z < levelElevation and self.endPoint.Z > levelElevation + ConfigSettings.ELEVATION_TOL:
 				return True
 			else:
 				continue
-		if self.startPoint.Z < levelElevation and self.endPoint.Z > levelElevation + ConfigSettings.elevationTolerance:
+		if self.startPoint.Z < levelElevation and self.endPoint.Z > levelElevation + ConfigSettings.ELEVATION_TOL:
 				return True
 		return False
 
@@ -675,9 +677,9 @@ class MepElement(ElementSplitter):
 		for level in self.listLevels:
 			elevation = level.ProjectElevation
 			levelIndex = self.listLevels.index(level)
-			if elevation + ConfigSettings.elevationTolerance > startPoint and elevation - ConfigSettings.elevationTolerance < startPoint:
+			if elevation + ConfigSettings.ELEVATION_TOL > startPoint and elevation - ConfigSettings.ELEVATION_TOL < startPoint:
 				break
-			elif elevation + ConfigSettings.elevationTolerance > endPoint and elevation - ConfigSettings.elevationTolerance < endPoint:
+			elif elevation + ConfigSettings.ELEVATION_TOL > endPoint and elevation - ConfigSettings.ELEVATION_TOL < endPoint:
 				if levelIndex != 0 and not (startPoint > elevation and endPoint >= elevation):
 					levelIndex = levelIndex - 1
 				break
@@ -761,22 +763,24 @@ class ElectricalElementsSplitter(MepElement):
 
 	# There is no way to predict location of union in cableTrays, that is why 
 	# decided to implement additional functionality - connectElements, which does it
+	# after full split of elements into sepate db.Elements
 	def assignElementsToLevels(self, newElement, elementToSplit):
 		if elementToSplit != None:
 			self.assignProperLevelToElement(elementToSplit)
 		if newElement != None:
 			self.assignProperLevelToElement(newElement)
 
-	def getConnectorsFromElement(self, element):
-		connectorsList = list(element.ConnectorManager.Connectors)
-		for connector in connectorsList:
-			self.connectorsToJoin.append(connector)
-
+	# Adds iterate trought all created elements (cableTrays or conduits)
+	# gets connectors and adds it to instance variable self.connectorsToJoin.
 	def addAllConnectorsToTheList(self):
 		for element in self.listOfElements:
-			self.getConnectorsFromElement(element)
+			connectorsList = list(element.ConnectorManager.Connectors)
+			for connector in connectorsList:
+    			self.connectorsToJoin.append(connector)
 
-	# Connects all elements together to create system connector
+	# Connects all newly created cableTray/Conduit elements. Method is sorts connectors ordered by elevation and tries 
+	# to insert union. If insertion of union returns exception it means there is required connection with fitting - so
+	# union is not necessary
 	def connectElements(self):
 		oldConnectors = self.connectorsToJoin
 		self.addAllConnectorsToTheList()
@@ -794,7 +798,8 @@ class ElectricalElementsSplitter(MepElement):
 					TransactionManager.Instance.TransactionTaskDone
 
 
-	# Disconnects electrical elements from fitting for splitting process
+	# Disconnects electrical elements from fitting for splitting process. The method is neccessary, because otherwise
+	# top elements remembers and holds connection with fitting
 	def disconnectElement(self):
 		connectorManager = self.element.ConnectorManager
 		for connectorIndex in range(2):
@@ -805,6 +810,8 @@ class ElectricalElementsSplitter(MepElement):
 					connectorOfOriginalElement.DisconnectFrom(connectorToDisconnect)
 					TransactionManager.Instance.TransactionTaskDone()
 
+# Converts selected in IN[0] node elements into list. No matter if there is only
+# one or multiple input elements
 def getlistOfElements():
 	try:
 		numberOfElements = len(IN[0])
@@ -815,13 +822,14 @@ def getlistOfElements():
 	except:
 		return [IN[0]]
 
+
+
 for elementToSplit in getlistOfElements():
-	# converts dynamo element (elementToSplit) to revit element
 	try:
+		# Converts dynamo element into db.Element (from revit API)
 		revitElement = doc.GetElement(db.ElementId(elementToSplit.Id))
 	except AttributeError:
 		continue		
-	# Tries to get revit element type
 	try:
 		elementType = revitElement.GetType()
 	except TypeError:
@@ -830,6 +838,8 @@ for elementToSplit in getlistOfElements():
 	if elementType == db.Wall:
 		element = WallSplitter(doc, revitElement)
 	elif elementType == db.FamilyInstance:
+		# Depending upon structural type of column most suitable class is used for
+		# element creation
 		structuralType = revitElement.StructuralType
 		if structuralType == db.Structure.StructuralType.Column and not revitElement.IsSlantedColumn:
 			element = ColumnSplitter(doc, revitElement)
@@ -841,7 +851,8 @@ for elementToSplit in getlistOfElements():
 		element = PipeSplitter(doc, revitElement)
 	elif elementType == db.Electrical.CableTray or elementType == db.Electrical.Conduit:
 		element = ElectricalElementsSplitter(doc, revitElement)
+	# If class instance was created element is splitted
 	if element != None:
 		element.splitElement()
 
-OUT = "done", dir(element.connectorsToJoin[0].Origin)
+OUT = "done"
