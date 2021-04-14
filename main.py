@@ -18,7 +18,7 @@ import Autodesk.Revit.DB as db
 doc = DocumentManager.Instance.CurrentDBDocument
 
 # Static class for settings of parameters
-class ConfigSettings:
+class Settings:
     	
     # Ratio of verticalness of an element. If condition doesn't fulfill the condition won't be splitted (no unit)
 	VERTICAL_RATIO = 0.0001
@@ -497,7 +497,7 @@ class SlantedColumnSplitter(ColumnSplitter):
 
 
 # Abstract class for MEP elements which is inherited by certain MEP categories
-class MepElement(ElementSplitter):
+class MEPElementSplitter(ElementSplitter):
 	
 	# Splits elements by levels (if applicable)
 	def splitElement(self):
@@ -510,7 +510,7 @@ class MepElement(ElementSplitter):
 			levelElevation = level.ProjectElevation
 			if elementToSplit == None:
 				break
-			elif levelElevation > self.startPoint.Z + ConfigSettings.OFFSET_TOLERANCE and levelElevation + ConfigSettings.ELEVATION_TOL < self.endPoint.Z:
+			elif levelElevation > self.startPoint.Z + Settings.OFFSET_TOLERANCE and levelElevation + Settings.ELEVATION_TOL < self.endPoint.Z:
 				elementToSplit = self.splitVerticalElement(elementToSplit, level)
 		# Additional method dedicated for conection of electrical elements due to lack of breakCurve method for electrical elements
 		if self.element.GetType() == db.Electrical.CableTray or self.element.GetType() == db.Electrical.Conduit:
@@ -525,7 +525,7 @@ class MepElement(ElementSplitter):
 		pass
 	
 	# Implementation in ElectricalElementsSplitter 
-	def disconnectElement():
+	def disconnectElement(self):
 		pass
 
 	def getConnectedElements(self):
@@ -546,7 +546,7 @@ class MepElement(ElementSplitter):
 	# Assign levelId to an element. LevelId is assinged to level parameter of an element
 	def setBaseLevelToElement(self, element):
 		elementCurve = element.Location.Curve
-		if self.elementLocationStyle == "TopToDown":
+		if self.MODELING_STYLE == "TopToDown":
 			elementStartPoint = elementCurve.GetEndPoint(0)
 		else:
 			elementStartPoint = elementCurve.GetEndPoint(1)
@@ -571,7 +571,7 @@ class MepElement(ElementSplitter):
 		verticalLength = math.fabs(self.endPoint.Z - self.startPoint.Z)
 		horizontalLength = math.sqrt(math.fabs(self.endPoint.X - self.startPoint.X)**2 + math.fabs(self.endPoint.Y - self.startPoint.Y)**2)
 		try:
-			if horizontalLength/verticalLength <= ConfigSettings.VERTICAL_RATIO:
+			if horizontalLength/verticalLength <= Settings.VERTICAL_RATIO:
 				return True
 			else:
 				return False
@@ -585,11 +585,11 @@ class MepElement(ElementSplitter):
 		originalStart = location.GetEndPoint(0)
 		originalEnd = location.GetEndPoint(1)
 		if originalStart.Z > originalEnd.Z:
-			self.elementLocationStyle = "TopToDown"
+			self.MODELING_STYLE = "TopToDown"
 			self.startPoint = originalEnd
 			self.endPoint = originalStart
 		else:
-			self.elementLocationStyle = "DownToTop"
+			self.MODELING_STYLE = "DownToTop"
 			self.startPoint = originalStart
 			self.endPoint = originalEnd
 
@@ -602,11 +602,11 @@ class MepElement(ElementSplitter):
 		endPointLevelIndex = None
 		for level in self.listLevels:
 			levelElevation = level.ProjectElevation
-			if self.startPoint.Z < levelElevation and self.endPoint.Z > levelElevation + ConfigSettings.ELEVATION_TOL:
+			if self.startPoint.Z < levelElevation and self.endPoint.Z > levelElevation + Settings.ELEVATION_TOL:
 				return True
 			else:
 				continue
-		if self.startPoint.Z < levelElevation and self.endPoint.Z > levelElevation + ConfigSettings.ELEVATION_TOL:
+		if self.startPoint.Z < levelElevation and self.endPoint.Z > levelElevation + Settings.ELEVATION_TOL:
 				return True
 		return False
 
@@ -642,7 +642,7 @@ class MepElement(ElementSplitter):
 	# AddsConnector based on elementLocationStyle modeling style 
 	def createNewUnion(self, newConnector, oldConnector):
 		TransactionManager.Instance.EnsureInTransaction(self.doc)
-		if self.elementLocationStyle == "TopToDown":
+		if self.MODELING_STYLE == "TopToDown":
 			union = self.doc.Create.NewUnionFitting(oldConnector, newConnector)
 		else:
 			union = self.doc.Create.NewUnionFitting(newConnector, oldConnector)
@@ -677,9 +677,9 @@ class MepElement(ElementSplitter):
 		for level in self.listLevels:
 			elevation = level.ProjectElevation
 			levelIndex = self.listLevels.index(level)
-			if elevation + ConfigSettings.ELEVATION_TOL > startPoint and elevation - ConfigSettings.ELEVATION_TOL < startPoint:
+			if elevation + Settings.ELEVATION_TOL > startPoint and elevation - Settings.ELEVATION_TOL < startPoint:
 				break
-			elif elevation + ConfigSettings.ELEVATION_TOL > endPoint and elevation - ConfigSettings.ELEVATION_TOL < endPoint:
+			elif elevation + Settings.ELEVATION_TOL > endPoint and elevation - Settings.ELEVATION_TOL < endPoint:
 				if levelIndex != 0 and not (startPoint > elevation and endPoint >= elevation):
 					levelIndex = levelIndex - 1
 				break
@@ -697,58 +697,59 @@ class MepElement(ElementSplitter):
 			self.listOfElements.append(self.addUnion(newElement, elementToSplit))
 
 
-# Class for duct elements
-class DuctSplitter(MepElement):
+# Class dedicated for Ducts. 
+# Inheritst from ElementSplitter -> MEPElementSplitter -> DuctSplitter
+class DuctSplitter(MEPElementSplitter):
 
-	# Function splitting a duct into 2 elements
+	# Function splits duct into two elements. Returning element which might require further splitting
 	def cutElementAndAssignUnionsPlusLevels(self, elementToSplit, cutPoint):
 		TransactionManager.Instance.EnsureInTransaction(self.doc)
-		try:
-			newElementId = db.Mechanical.MechanicalUtils.BreakCurve(self.doc, elementToSplit.Id, cutPoint)
-			newElement = self.doc.GetElement(newElementId)
-		except:
-			newElement = None
+		newElementId = db.Mechanical.MechanicalUtils.BreakCurve(self.doc, elementToSplit.Id, cutPoint)
+		newElement = self.doc.GetElement(newElementId)
 		self.listOfElements.append(newElement)
 		TransactionManager.Instance.TransactionTaskDone()
 		self.assignElementsToLevelsAndAddUnion(newElement, elementToSplit)
-		if self.elementLocationStyle == "TopToDown":
+		if self.MODELING_STYLE == "TopToDown":
 			return newElement
 		return elementToSplit
 
 
-# Class for pipes (plumbing elements - not Conduits)
-class PipeSplitter(MepElement):
+# Class dedicated for Pipes (not conduits). 
+# Inheritst from ElementSplitter -> MEPElementSplitter -> PipeSplitter
+class PipeSplitter(MEPElementSplitter):
 
-	# Function splitting a duct into 2 elements
+	# Function splits pipe into two elements. Returning element which might require further splitting
 	def cutElementAndAssignUnionsPlusLevels(self, elementToSplit, cutPoint):
 		TransactionManager.Instance.EnsureInTransaction(self.doc)
-		try:
-			newElementId = db.Plumbing.PlumbingUtils.BreakCurve(self.doc, elementToSplit.Id, cutPoint)
-			newElement = self.doc.GetElement(newElementId)
-		except:
-			newElement = None
+		newElementId = db.Plumbing.PlumbingUtils.BreakCurve(self.doc, elementToSplit.Id, cutPoint)
+		newElement = self.doc.GetElement(newElementId)
 		self.listOfElements.append(newElement)
 		TransactionManager.Instance.TransactionTaskDone()
 		self.assignElementsToLevelsAndAddUnion(newElement, elementToSplit)
-		if self.elementLocationStyle == "TopToDown":
+		if self.MODELING_STYLE == "TopToDown":
 			return newElement
 		return elementToSplit
 
 
-class ElectricalElementsSplitter(MepElement):
+# Class dedicated for splitting conduits and cableTrays. 
+# Inheritst from ElementSplitter -> MEPElementSplitter -> ElectricalElementsSplitter
+class ElectricalElementsSplitter(MEPElementSplitter):
 	
-	# Copy element and get new one
+	# Copy element and returns the same element not transformed
 	def getElementCopy(self):
 		new = db.ElementTransformUtils.CopyElement(self.doc, self.element.Id, db.XYZ(0, 0, 0))
+		# new is type of  ICollection<ElementId>, that is why have to convert it into list and get first element, 
+		# because only one element is copying 
 		newElementId = list(new)[0]
 		newElement = self.doc.GetElement(newElementId)
 		self.listOfElements.append(newElement)
 		return newElement
 
-	# Function splitting a duct into 2 elements
+	# Function splits cableTray/conduit into two elements. Returning element which might require further splitting
+	# Depending upon location style points are selected in 2 two ways
 	def cutElementAndAssignUnionsPlusLevels(self, elementToSplit, cutPoint):
 		TransactionManager.Instance.EnsureInTransaction(self.doc)
-		if self.elementLocationStyle == "TopToDown":
+		if self.MODELING_STYLE == "TopToDown":
 			elementToSplitLine = db.Line.CreateBound(self.element.Location.Curve.GetEndPoint(0), cutPoint)
 			newElementLine = db.Line.CreateBound(self.element.Location.Curve.GetEndPoint(1), cutPoint)
 		else:
@@ -776,7 +777,7 @@ class ElectricalElementsSplitter(MepElement):
 		for element in self.listOfElements:
 			connectorsList = list(element.ConnectorManager.Connectors)
 			for connector in connectorsList:
-    			self.connectorsToJoin.append(connector)
+				self.connectorsToJoin.append(connector)
 
 	# Connects all newly created cableTray/Conduit elements. Method is sorts connectors ordered by elevation and tries 
 	# to insert union. If insertion of union returns exception it means there is required connection with fitting - so
