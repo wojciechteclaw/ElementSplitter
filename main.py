@@ -488,7 +488,6 @@ class SlantedColumnSplitter(ColumnSplitter):
 			try:
 				self.setOffsetForLastElement(elementBeingSplit, i, coefficientOfSplitting)
 				self.setElementData(elementBeingSplit)
-				
 			except:
 				pass
 			if IN[2]:
@@ -511,19 +510,31 @@ class MepElement(ElementSplitter):
 				break
 			elif levelElevation > self.startPoint.Z + ConfigSettings.offsetToleranceMEP and levelElevation + ConfigSettings.elevationTolerance < self.endPoint.Z:
 				elementToSplit = self.splitVerticalElement(elementToSplit, level)
+		# Additional method dedicated for conection of electrical elements due to lack of breakCurve method for electrical elements
+		if self.element.GetType() == db.Electrical.CableTray or self.element.GetType() == db.Electrical.Conduit:
+    			self.connectElements()
 		if IN[2]:
 			self.createGroup()
-		# Additional method dedicated for conection of electrical elements due to lack of breakCurve method for electrical elements
-		elementClass = self.element.GetType()
-		if elementClass == db.Electrical.CableTray or elementClass == db.Electrical.Conduit:
-			self.connectElements()
 
+
+	
+	# Implementation in ElectricalElementsSplitter 
 	def connectElements(self):
 		pass
+	
 	# Implementation in ElectricalElementsSplitter 
+	def disconnectElement():
+		pass
 
 	def getConnectedElements(self):
-
+		self.connectorsToJoin = list()
+		# CableTrays always have 2 connectors
+		connectorManager = self.element.ConnectorManager
+		for i in range(2):
+			for j in connectorManager.Lookup(i).AllRefs:
+				if j.Owner.Id != self.element.Id:
+					self.connectorsToJoin.append(j)
+		self.disconnectElement()
 
 	# Assign levelId to each of MEP element in the list. levelId is assinged to level parameter of an element
 	def assignLevelsToElements(self, elements):
@@ -744,26 +755,51 @@ class ElectricalElementsSplitter(MepElement):
 		newElement = self.getElementCopy()
 		elementToSplit.Location.Curve = elementToSplitLine
 		newElement.Location.Curve = newElementLine
-		self.assignElementsToLevelsAndAddUnion(elementToSplit, newElement)
+		self.assignElementsToLevels(elementToSplit, newElement)
 		TransactionManager.Instance.TransactionTaskDone()
 		return elementToSplit
-	
+
 	# There is no way to predict location of union in cableTrays, that is why 
 	# decided to implement additional functionality - connectElements, which does it
-	def assignElementsToLevelsAndAddUnion(self, newElement, elementToSplit):
+	def assignElementsToLevels(self, newElement, elementToSplit):
 		if elementToSplit != None:
 			self.assignProperLevelToElement(elementToSplit)
 		if newElement != None:
 			self.assignProperLevelToElement(newElement)
-	def connectElements(self):
-		pass
-		# el = UnwrapElement(IN[0])
-		# cn = list(el.ConnectorManager.Connectors)[1]
-		# references = el.ConnectorManager.Lookup(1).AllRefs
-		# lst = list()
-		# for i in references:
-		# 	lst.append(i.Owner)
 
+	def getConnectorsFromElement(self, element):
+		connectorsList = list(element.ConnectorManager.Connectors)
+		for connector in connectorsList:
+			self.connectorsToJoin.append(connector)
+
+	def addAllConnectorsToTheList(self):
+		for element in self.listOfElements:
+			self.getConnectorsFromElement(element)
+
+	# Connects all elements together to create system connector
+	def connectElements(self):
+		oldConnectors = self.connectorsToJoin
+		self.addAllConnectorsToTheList()
+		sortedByLevel = sorted(self.connectorsToJoin, key = lambda x : x.Origin.Z)
+		for connectorIndex in range(len(sortedByLevel) - 1):
+			mainConnector = sortedByLevel[connectorIndex]
+			# Get next item in list
+			connectorToCheck = sortedByLevel[connectorIndex + 1]
+			if mainConnector.Origin.IsAlmostEqualTo(connectorToCheck.Origin):
+				self.listOfElements.append(self.createNewUnion(mainConnector, connectorToCheck))
+
+
+
+	# Disconnects electrical elements from fitting for splitting process
+	def disconnectElement(self):
+		connectorManager = self.element.ConnectorManager
+		for connectorIndex in range(2):
+			connectorOfOriginalElement = connectorManager.Lookup(connectorIndex)
+			for connectorToDisconnect in self.connectorsToJoin:
+				if connectorOfOriginalElement.IsConnectedTo(connectorToDisconnect):
+					TransactionManager.Instance.EnsureInTransaction(self.doc)
+					connectorOfOriginalElement.DisconnectFrom(connectorToDisconnect)
+					TransactionManager.Instance.TransactionTaskDone()
 
 def getlistOfElements():
 	try:
@@ -774,7 +810,6 @@ def getlistOfElements():
 			return [IN[0]]
 	except:
 		return [IN[0]]
-
 
 for elementToSplit in getlistOfElements():
 	# converts dynamo element (elementToSplit) to revit element
@@ -804,4 +839,5 @@ for elementToSplit in getlistOfElements():
 		element = ElectricalElementsSplitter(doc, revitElement)
 	if element != None:
 		element.splitElement()
-OUT = "done", revitElement.GetType()
+
+OUT = "done", dir(element.connectorsToJoin[0].Origin)
