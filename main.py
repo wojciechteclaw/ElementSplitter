@@ -786,8 +786,12 @@ class ElectricalElementsSplitter(MepElement):
 			# Get next item in list
 			connectorToCheck = sortedByLevel[connectorIndex + 1]
 			if mainConnector.Origin.IsAlmostEqualTo(connectorToCheck.Origin):
-				self.listOfElements.append(self.createNewUnion(mainConnector, connectorToCheck))
-
+				try:
+					self.listOfElements.append(self.createNewUnion(mainConnector, connectorToCheck))
+				except:
+					TransactionManager.Instance.EnsureInTransaction(self.doc)
+					mainConnector.ConnectTo(connectorToCheck)
+					TransactionManager.Instance.TransactionTaskDone
 
 
 	# Disconnects electrical elements from fitting for splitting process
