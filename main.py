@@ -136,9 +136,11 @@ class ElementSplitter():
 	# Copies element
 	def copyElement(self):
 		TransactionManager.Instance.EnsureInTransaction(self.doc)
-		element = db.ElementTransformUtils.CopyElement(self.doc, self.element.Id, db.XYZ(0,0,0))
+		elementIdsCollection = db.ElementTransformUtils.CopyElement(self.doc, self.element.Id, db.XYZ(0,0,0))
 		TransactionManager.Instance.TransactionTaskDone()
-		return element
+		# new is type of  ICollection<ElementId>, that is why have to convert it into list and get first element, 
+		# because only one element is copying 
+		return self.doc.GetElement(elementIdsCollection[0])
 
 	# Deletes element
 	def deleteOriginalElement(self):
@@ -149,7 +151,7 @@ class ElementSplitter():
 	# Additional element for columns with top offset
 	def additionalElementWhileTopOffset(self, index):
 		if self.getTopOffsetValue() != 0:
-			element = self.doc.GetElement(self.copyElement()[0])
+			element = self.copyElement()
 			self.setBaseOffsetValue(element, 0)
 			self.setTopOffsetValue(element, self.getTopOffsetValue())
 			self.setBaseLevel(element, self.levelIdsList[index + 1])
@@ -174,7 +176,7 @@ class ElementSplitter():
 			startLevelIndex = self.getIndexOfBaseLevel()
 			endLevelIndex = self.getIndexOfTopLevel()
 			for i in range(startLevelIndex, endLevelIndex):
-				elementToChange = self.doc.GetElement(self.copyElement()[0])
+				elementToChange = self.copyElement()
 				self.listOfElementsToJoin.append(elementToChange)
 				if i == startLevelIndex:
 					self.setBaseOffsetValue(elementToChange, self.getBaseOffsetValue())
@@ -268,13 +270,13 @@ class ElementSplitter():
 
 	# Sets new top boundry for element
 	def setNewTopBoundries(self, levelIndex, newLevelIndex):
-		differenceInOffset = self.getDistanceBetweenLevels(levelIndex, newLevelIndex)
+		offsetDifference = self.getDistanceBetweenLevels(levelIndex, newLevelIndex)
 		# if wall is unconnected
 		if self.getTopConstraintLevelId().IntegerValue == -1:
-			newOffset = self.getHeight() + self.getBaseOffsetValue() + differenceInOffset
+			newOffset = self.getHeight() + self.getBaseOffsetValue() + offsetDifference
 		# Top is constrained to level
 		else:
-			newOffset = self.getTopOffsetValue() + differenceInOffset
+			newOffset = self.getTopOffsetValue() + offsetDifference
 		newLevelId = self.levelIdsList[newLevelIndex]
 		TransactionManager.Instance.EnsureInTransaction(doc)
 		self.setTopLevel(self.element, newLevelId)
@@ -302,8 +304,8 @@ class ElementSplitter():
 
 	# Sets new base boundry for element
 	def setNewBaseBoundries(self, levelIndex, newLevelIndex):
-		differenceInOffset = self.getDistanceBetweenLevels(levelIndex, newLevelIndex)
-		newOffset = self.getBaseOffsetValue() + differenceInOffset
+		offsetDifference = self.getDistanceBetweenLevels(levelIndex, newLevelIndex)
+		newOffset = self.getBaseOffsetValue() + offsetDifference
 		newLevelId = self.levelIdsList[newLevelIndex]
 		TransactionManager.Instance.EnsureInTransaction(doc)
 		self.setBaseLevel(self.element, newLevelId)
@@ -348,7 +350,7 @@ class WallSplitter(ElementSplitter):
 
 # SETTERS
 
-	# Void, sets base constraint level based on level Id
+	# Sets base constraint level based on level Id
 	def setBaseLevel(self, element, levelId):
 		element.get_Parameter(db.BuiltInParameter.WALL_BASE_CONSTRAINT).Set(levelId)
 
@@ -356,7 +358,7 @@ class WallSplitter(ElementSplitter):
 	def setBaseOffsetValue(self, element, value):
 		element.get_Parameter(db.BuiltInParameter.WALL_BASE_OFFSET).Set(value)
 
-	# Void, sets top constraint level based on level Id
+	# Sets top constraint level based on level Id
 	def setTopLevel(self, element, levelId):
 		element.get_Parameter(db.BuiltInParameter.WALL_HEIGHT_TYPE).Set(levelId)
 
@@ -396,19 +398,19 @@ class ColumnSplitter(ElementSplitter):
 
 # SETTERS
 
-	# Void, sets base constraint level based on level Id
+	# Sets base constraint level based on level Id
 	def setBaseLevel(self, element, levelId):
 		element.get_Parameter(db.BuiltInParameter.FAMILY_BASE_LEVEL_PARAM).Set(levelId)
 
-	# Void,sets base offset based on value
+	# Sets base offset based on value
 	def setBaseOffsetValue(self, element, value):
 		element.get_Parameter(db.BuiltInParameter.FAMILY_BASE_LEVEL_OFFSET_PARAM).Set(value)
 
-	# Void, sets top constraint level based on level Id
+	# Sets top constraint level based on level Id
 	def setTopLevel(self, element, levelId):
 		element.get_Parameter(db.BuiltInParameter.FAMILY_TOP_LEVEL_PARAM).Set(levelId)
 
-	# Void,sets top offset based on value
+	# Sets top offset based on value
 	def setTopOffsetValue(self, element, value):
 		element.get_Parameter(db.BuiltInParameter.FAMILY_TOP_LEVEL_OFFSET_PARAM).Set(value)
 
@@ -502,6 +504,7 @@ class MEPElementSplitter(ElementSplitter):
 	# Splits elements by levels (if applicable)
 	def splitElement(self):
 		self.getConnectedElements()
+		self.disconnectElement()
 		if not self.isElementPossibleToSplit():
 			self.setBaseLevelToElement(self.element)
 		elementToSplit = self.element
@@ -528,6 +531,7 @@ class MEPElementSplitter(ElementSplitter):
 	def disconnectElement(self):
 		pass
 
+	# Get connected elements to the element and adds it to a instance variable connectorsToJoin (list)
 	def getConnectedElements(self):
 		self.connectorsToJoin = list()
 		# CableTrays always have 2 connectors
@@ -536,7 +540,6 @@ class MEPElementSplitter(ElementSplitter):
 			for j in connectorManager.Lookup(i).AllRefs:
 				if j.Owner.Id != self.element.Id:
 					self.connectorsToJoin.append(j)
-		self.disconnectElement()
 
 	# Assign levelId to each of MEP element in the list. levelId is assinged to level parameter of an element
 	def assignLevelsToElements(self, elements):
@@ -624,7 +627,7 @@ class MEPElementSplitter(ElementSplitter):
 		return self.element.get_Parameter(db.BuiltInParameter.RBS_START_OFFSET_PARAM).AsDouble()
 
 	#SETTERS
-	# Void, sets base constraint level based on level Id
+	# Sets base constraint level based on level Id
 	def setBaseLevel(self, element, levelId):
 		TransactionManager.Instance.EnsureInTransaction(self.doc)
 		element.get_Parameter(db.BuiltInParameter.RBS_START_LEVEL_PARAM).Set(levelId)
@@ -633,15 +636,16 @@ class MEPElementSplitter(ElementSplitter):
 
 	# Sets new base boundry for element
 	def setNewBaseBoundries(self, levelIndex, newLevelIndex):
-		differenceInOffset = self.getDistanceBetweenLevels(levelIndex, newLevelIndex)
+		offsetDifference = self.getDistanceBetweenLevels(levelIndex, newLevelIndex)
 		newLevelId = self.levelIdsList[newLevelIndex]
 		TransactionManager.Instance.EnsureInTransaction(doc)
 		self.setBaseLevel(self.element, newLevelId)
 		TransactionManager.Instance.TransactionTaskDone()
 
-	# AddsConnector based on elementLocationStyle modeling style 
+	# Adds a union between connectors
 	def createNewUnion(self, newConnector, oldConnector):
 		TransactionManager.Instance.EnsureInTransaction(self.doc)
+		# It is important due to a assignment of proper level to the newly created union
 		if self.MODELING_STYLE == "TopToDown":
 			union = self.doc.Create.NewUnionFitting(oldConnector, newConnector)
 		else:
@@ -649,10 +653,12 @@ class MEPElementSplitter(ElementSplitter):
 		TransactionManager.Instance.TransactionTaskDone()
 		self.listOfElements.append(union)
 
-	# Adds MEP element union 
+	# Search for a common connector location between two elements. It runs method for creation of new union when 
+	# 2 connectors in the same location are found
 	def insertUnion(self, newElement, elementToSplit):
 		newElementManager = newElement.ConnectorManager
 		oldElementManager = elementToSplit.ConnectorManager
+		# All MEP elements splitted by this script has only two connectors
 		for i in range(2):
 			for j in range(2):
 				newConnector = newElementManager.Lookup(i)
@@ -680,8 +686,13 @@ class MEPElementSplitter(ElementSplitter):
 		for level in self.listLevels:
 			elevation = level.ProjectElevation
 			levelIndex = self.listLevels.index(level)
+			# levels are sorted by elevation in ascending order. Condition checks if start point is located close
+			# to an level. If so it breaks the iteration and sets found level as host level
 			if elevation + Settings.ELEVATION_TOL > startPoint and elevation - Settings.ELEVATION_TOL < startPoint:
 				break
+			# The same as condition for start point. But in case of end point levelIndex is decreased by one (if 
+			# levelIndex != 0), because element has its start point somewhere between levelIndex and levelIndex - 1,
+			# so levelIndex - 1 is choosen.
 			elif elevation + Settings.ELEVATION_TOL > endPoint and elevation - Settings.ELEVATION_TOL < endPoint:
 				if levelIndex != 0 and not (startPoint > elevation and endPoint >= elevation):
 					levelIndex = levelIndex - 1
@@ -736,16 +747,6 @@ class PipeSplitter(MEPElementSplitter):
 # Class dedicated for splitting conduits and cableTrays. 
 # Inheritst from ElementSplitter -> MEPElementSplitter -> ElectricalElementsSplitter
 class ElectricalElementsSplitter(MEPElementSplitter):
-	
-	# Copy element and returns the same element not transformed
-	def getElementCopy(self):
-		new = db.ElementTransformUtils.CopyElement(self.doc, self.element.Id, db.XYZ(0, 0, 0))
-		# new is type of  ICollection<ElementId>, that is why have to convert it into list and get first element, 
-		# because only one element is copying 
-		newElementId = list(new)[0]
-		newElement = self.doc.GetElement(newElementId)
-		self.listOfElements.append(newElement)
-		return newElement
 
 	# Function splits cableTray/conduit into two elements. Returning element which might require further splitting
 	# Depending upon location style points are selected in 2 two ways
@@ -753,11 +754,12 @@ class ElectricalElementsSplitter(MEPElementSplitter):
 		TransactionManager.Instance.EnsureInTransaction(self.doc)
 		if self.MODELING_STYLE == "TopToDown":
 			elementToSplitLine = db.Line.CreateBound(self.element.Location.Curve.GetEndPoint(0), cutPoint)
-			newElementLine = db.Line.CreateBound(self.element.Location.Curve.GetEndPoint(1), cutPoint)
+			newElementLine = db.Line.CreateBound(cutPoint, self.element.Location.Curve.GetEndPoint(1))
 		else:
 			elementToSplitLine = db.Line.CreateBound(cutPoint, self.element.Location.Curve.GetEndPoint(1))
 			newElementLine = db.Line.CreateBound(self.element.Location.Curve.GetEndPoint(0), cutPoint)
-		newElement = self.getElementCopy()
+		newElement = self.copyElement()
+		self.listOfElements.append(newElement)
 		elementToSplit.Location.Curve = elementToSplitLine
 		newElement.Location.Curve = newElementLine
 		self.assignElementsToLevels(elementToSplit, newElement)
