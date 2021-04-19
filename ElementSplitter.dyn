@@ -6,7 +6,22 @@
   "ElementResolver": {
     "ResolutionMap": {}
   },
-  "Inputs": [],
+  "Inputs": [
+    {
+      "Id": "c1497648064e42839a1b277b0a7baf54",
+      "Name": "True = Split by all levels/False = Split by levels in current view",
+      "Type": "boolean",
+      "Value": "true",
+      "Description": "Selection between a true and false."
+    },
+    {
+      "Id": "0253cb9bbf104305be5ed1fbb4a014df",
+      "Name": "Group elements ?",
+      "Type": "boolean",
+      "Value": "true",
+      "Description": "Selection between a true and false."
+    }
+  ],
   "Outputs": [],
   "Nodes": [
     {
@@ -180,7 +195,7 @@
         "ShowGeometry": true,
         "Name": "Select Model Elements",
         "Id": "a2f22409d215491691ab90ec2373bb03",
-        "IsSetAsInput": false,
+        "IsSetAsInput": true,
         "IsSetAsOutput": false,
         "Excluded": false,
         "X": 47.06528189910982,
@@ -190,7 +205,7 @@
         "ShowGeometry": true,
         "Name": "True = Split by all levels/False = Split by levels in current view",
         "Id": "c1497648064e42839a1b277b0a7baf54",
-        "IsSetAsInput": false,
+        "IsSetAsInput": true,
         "IsSetAsOutput": false,
         "Excluded": false,
         "X": 42.317507418397668,
@@ -200,7 +215,7 @@
         "ShowGeometry": true,
         "Name": "Group elements ?",
         "Id": "0253cb9bbf104305be5ed1fbb4a014df",
-        "IsSetAsInput": false,
+        "IsSetAsInput": true,
         "IsSetAsOutput": false,
         "Excluded": false,
         "X": 38.95221380824799,
@@ -208,8 +223,8 @@
       }
     ],
     "Annotations": [],
-    "X": 22.46697362170471,
-    "Y": -4.9579668916607034,
+    "X": -19.53302637829529,
+    "Y": -2.9579668916607034,
     "Zoom": 1.1047642563030273
   }
 }
