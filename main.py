@@ -20,7 +20,7 @@ doc = DocumentManager.Instance.CurrentDBDocument
 # Static class for settings of parameters
 class Settings:
 
-    # Ratio of verticalness of an element. If condition doesn't fulfill the condition won't be splitted (no unit)
+	# Ratio of verticalness of an element. If condition doesn't fulfill the condition won't be splitted (no unit)
 	VERTICAL_RATIO = 0.0001
 
 	# Tolerance of level location - don't use less than 0.001 (in feets)
@@ -527,7 +527,7 @@ class MEPElementSplitter(ElementSplitter):
 		self.listOfElements.append(elementToSplit)
 		# Additional method dedicated for conection of electrical elements due to lack of breakCurve method for electrical elements
 		if self.element.GetType() == db.Electrical.CableTray or self.element.GetType() == db.Electrical.Conduit:
-    			self.connectElements()
+				self.connectElements()
 		if IN[2]:
 			self.createGroup()
 
@@ -822,13 +822,9 @@ class ElectricalElementsSplitter(MEPElementSplitter):
 # Converts selected in IN[0] node elements into list. No matter if there is only
 # one or multiple input elements
 def getlistOfElements():
-	try:
-		numberOfElements = len(IN[0])
-		if numberOfElements > 1:
-			return IN[0]
-		else:
-			return [IN[0]]
-	except:
+	if hasattr(IN[0], '__iter__'):
+		return IN[0]
+	else:
 		return [IN[0]]
 
 
