@@ -30,6 +30,9 @@ class Settings:
 	# the length of longest union used in MEP models.
 	OFFSET_TOLERANCE = 0.5
 
+	# Rounding number of digits
+	ROUNDING = 3
+
 # functions collecting side elements
 def getListOfLevelIds(doc):
 	fltr = db.ElementCategoryFilter(db.BuiltInCategory.OST_Levels)
@@ -120,10 +123,12 @@ class ElementSplitter():
 		self.tryToModifyTopBoundries()
 	
 	# Gets data from splitting element
+	# For custom configuration
 	def getElementData(self):
 		self.param_Mark = self.element.LookupParameter("Mark").AsString()
 	
 	# Sets basic parameters to newly created elements
+	# For custom configuration
 	def setElementData(self, element):
 		TransactionManager.Instance.EnsureInTransaction(self.doc)
 		try:
@@ -427,12 +432,12 @@ class SlantedColumnSplitter(ColumnSplitter):
 
 # SETTERS - inherits from parent
 	
-	# Sets basic parameters to newly created elements
+	# Method prepared for copying all necessary element data. Currently Mark and cut style of top and base
+	# Sets element data got in getElementData
 	def setElementData(self, element):
 		TransactionManager.Instance.EnsureInTransaction(self.doc)
 		try:
 			element.LookupParameter("Mark").Set(self.param_Mark)
-		# pass while mark == None
 		except TypeError:
 			pass
 		element.get_Parameter(db.BuiltInParameter.SLANTED_COLUMN_BASE_CUT_STYLE).Set(self.param_BaseCutStyle)
@@ -448,28 +453,29 @@ class SlantedColumnSplitter(ColumnSplitter):
 
 	# Splits proper levels for elements which has offset different than 0
 	def setOffsetForLastElement(self, element, index, coefficient):
-		if round(coefficient, 3) > 0 and round(coefficient, 3) < 1:
+		if round(coefficient, Settings.ROUNDING) > 0 and round(coefficient, Settings.ROUNDING) < 1:
 			self.setBaseLevel(element, self.levelIdsList[index + 1])
 			self.setTopLevel(element, self.levelIdsList[index + 1])
 		else:
 			self.setBaseLevel(element, self.levelIdsList[index])
 			self.setTopLevel(element, self.levelIdsList[index + 1])
 	
-	# splits slantedColumnIntoTwoElements
-	def splitColumnIntoTwoElements(self, element, index, coefficinet):
+	# Split slanted column by coefficient which defines ratio between start and end point of column.
+	# Returns part of eleemnt which is furthure iterated to split entire column
+	def splitSlanterColumn(self, element, index, coefficient):
 		oldElement = element
-		if round(coefficinet, 3) > 0 and round(coefficinet, 3) < 1:
-				TransactionManager.Instance.EnsureInTransaction(self.doc)
-				elementBeingSplit = self.doc.GetElement(element.Split(coefficinet))
-				TransactionManager.Instance.TransactionTaskDone()
-				self.setBaseLevel(oldElement, self.levelIdsList[index])
-				self.setTopLevel(oldElement, self.levelIdsList[index + 1])
-				self.setElementData(oldElement)
-				return elementBeingSplit
+		if round(coefficient, Settings.ROUNDING) > 0 and round(coefficient, Settings.ROUNDING) < 1:
+			TransactionManager.Instance.EnsureInTransaction(self.doc)
+			elementBeingSplit = self.doc.GetElement(element.Split(coefficient))
+			TransactionManager.Instance.TransactionTaskDone()
+			self.setBaseLevel(oldElement, self.levelIdsList[index])
+			self.setTopLevel(oldElement, self.levelIdsList[index + 1])
+			self.setElementData(oldElement)
+			return elementBeingSplit
 		else:
 			return element
 
-	# Splits slanted column
+	# Splits slanded column by intersections with all levels
 	def splitElement(self):
 		self.getElementData()
 		if self.isElementPossibleToSplit():
@@ -478,18 +484,19 @@ class SlantedColumnSplitter(ColumnSplitter):
 			elementBeingSplit = self.element
 			self.listOfElements.append(self.element)
 			for i in range(startLevelIndex, endLevelIndex):
-				splitedElementLength = self.getElementVerticalHeight(elementBeingSplit)
+				lowerLevel = self.doc.GetElement(self.levelIdsList[i+1]).Elevation
+				higherLevel = self.doc.GetElement(self.levelIdsList[i]).Elevation
 				if i == startLevelIndex:
-					segmentLen = self.doc.GetElement(self.levelIdsList[i+1]).Elevation - self.doc.GetElement(self.levelIdsList[i]).Elevation - self.getBaseOffsetValue()
+					segmentLen = lowerLevel - higherLevel - self.getBaseOffsetValue()
 				elif i == endLevelIndex - 1:
-					segmentLen = self.doc.GetElement(self.levelIdsList[i+1]).Elevation - self.doc.GetElement(self.levelIdsList[i]).Elevation + self.getTopOffsetValue()
+					segmentLen = lowerLevel - higherLevel + self.getTopOffsetValue()
 				else:
-					segmentLen = self.doc.GetElement(self.levelIdsList[i+1]).Elevation - self.doc.GetElement(self.levelIdsList[i]).Elevation
-				coefficientOfSplitting = segmentLen/splitedElementLength
-				elementBeingSplit = self.splitColumnIntoTwoElements(elementBeingSplit, i, coefficientOfSplitting)
+					segmentLen = lowerLevel - higherLevel
+				splittingRatio = segmentLen/self.getElementVerticalHeight(elementBeingSplit)
+				elementBeingSplit = self.splitSlanterColumn(elementBeingSplit, i, splittingRatio)
 				self.listOfElements.append(elementBeingSplit)
 			try:
-				self.setOffsetForLastElement(elementBeingSplit, i, coefficientOfSplitting)
+				self.setOffsetForLastElement(elementBeingSplit, i, splittingRatio)
 				self.setElementData(elementBeingSplit)
 			except:
 				pass
@@ -524,8 +531,6 @@ class MEPElementSplitter(ElementSplitter):
 		if IN[2]:
 			self.createGroup()
 
-
-	
 	# Implementation in ElectricalElementsSplitter 
 	def connectElements(self):
 		pass
