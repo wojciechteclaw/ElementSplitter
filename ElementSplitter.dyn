@@ -1,91 +1,23 @@
 {
-  "Uuid": "f36ddf5d-f85c-4519-b70c-645b6c43f1aa",
+  "Uuid": "33074227-0122-4f21-a0a6-d312eeea7e56",
   "IsCustomNode": false,
   "Description": null,
   "Name": "ElementSplitter",
   "ElementResolver": {
     "ResolutionMap": {}
   },
-  "Inputs": [
-    {
-      "Id": "d16f6f1cec3e4fdc96ed925e48597c39",
-      "Name": "True = Split by all levels. False = Split by visible levels in current view",
-      "Type": "boolean",
-      "Value": "true",
-      "Description": "Selection between a true and false."
-    },
-    {
-      "Id": "ad6c2c1491ff45f2babfa64aefd5e431",
-      "Name": "Create groups of splitted elements?",
-      "Type": "boolean",
-      "Value": "false",
-      "Description": "Selection between a true and false."
-    }
-  ],
+  "Inputs": [],
   "Outputs": [],
   "Nodes": [
-    {
-      "ConcreteType": "Dynamo.Nodes.DSModelElementsSelection, DSRevitNodesUI",
-      "NodeType": "ExtensionNode",
-      "InstanceId": [
-        "b2b55fbe-7590-4abe-9a75-417e0282e342-00150052",
-        "b2b55fbe-7590-4abe-9a75-417e0282e342-0015005a",
-        "e46af575-cde1-499d-a8fd-42cc6b9df399-00152055",
-        "e46af575-cde1-499d-a8fd-42cc6b9df399-0015208d",
-        "e46af575-cde1-499d-a8fd-42cc6b9df399-00152095",
-        "e46af575-cde1-499d-a8fd-42cc6b9df399-00152099",
-        "e46af575-cde1-499d-a8fd-42cc6b9df399-001520a4",
-        "e46af575-cde1-499d-a8fd-42cc6b9df399-001520b0",
-        "e46af575-cde1-499d-a8fd-42cc6b9df399-001520d1",
-        "e46af575-cde1-499d-a8fd-42cc6b9df399-001520d7",
-        "e46af575-cde1-499d-a8fd-42cc6b9df399-001520ec",
-        "e46af575-cde1-499d-a8fd-42cc6b9df399-001520f0",
-        "e46af575-cde1-499d-a8fd-42cc6b9df399-0015210c",
-        "e46af575-cde1-499d-a8fd-42cc6b9df399-0015212e",
-        "e46af575-cde1-499d-a8fd-42cc6b9df399-00152138",
-        "e46af575-cde1-499d-a8fd-42cc6b9df399-0015213c",
-        "e46af575-cde1-499d-a8fd-42cc6b9df399-00152144",
-        "e46af575-cde1-499d-a8fd-42cc6b9df399-00152148",
-        "e46af575-cde1-499d-a8fd-42cc6b9df399-00152152",
-        "e46af575-cde1-499d-a8fd-42cc6b9df399-00152156",
-        "e46af575-cde1-499d-a8fd-42cc6b9df399-0015215d",
-        "e46af575-cde1-499d-a8fd-42cc6b9df399-00152160",
-        "e46af575-cde1-499d-a8fd-42cc6b9df399-001521cf",
-        "e46af575-cde1-499d-a8fd-42cc6b9df399-001521d0",
-        "e46af575-cde1-499d-a8fd-42cc6b9df399-001521d1",
-        "e46af575-cde1-499d-a8fd-42cc6b9df399-001521d2",
-        "e46af575-cde1-499d-a8fd-42cc6b9df399-001521d3",
-        "e46af575-cde1-499d-a8fd-42cc6b9df399-001521d4",
-        "e46af575-cde1-499d-a8fd-42cc6b9df399-001521d5",
-        "e46af575-cde1-499d-a8fd-42cc6b9df399-001521d6",
-        "e46af575-cde1-499d-a8fd-42cc6b9df399-001521d7",
-        "e46af575-cde1-499d-a8fd-42cc6b9df399-001521d8"
-        "95b5aa13-4921-4827-a496-049f31926157-00150399"
-      ],
-      "Id": "b344bca634e843c9b56662ad23e52a4b",
-      "Inputs": [],
-      "Outputs": [
-        {
-          "Id": "66768cebc63543d9b92f49571c6e9386",
-          "Name": "Elements",
-          "Description": "The selected elements.",
-          "UsingDefaultValue": false,
-          "Level": 2,
-          "UseLevels": false,
-          "KeepListStructure": false
-        }
-      ],
-      "Replication": "Disabled"
-    },
     {
       "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
       "NodeType": "PythonScriptNode",
       "Code": "import clr\r\nimport math\r\nfrom sys import path as sysPath\r\nsysPath.append(\"C:\\Program Files (x86)\\IronPython 2.7\\Lib\")\r\n\r\n# For pupose of using List[Type](iterable) \r\nfrom System.Collections.Generic import List as sysList\r\n\r\n# Import DocumentManager and TransactionManager\r\nclr.AddReference(\"RevitServices\")\r\nimport RevitServices\r\nfrom RevitServices.Persistence import DocumentManager\r\nfrom RevitServices.Transactions import TransactionManager\r\n\r\n# Import RevitAPI\r\nclr.AddReference(\"RevitAPI\")\r\nimport Autodesk.Revit.DB as db\r\ndoc = DocumentManager.Instance.CurrentDBDocument\r\n\r\n# Class for setting splitting tolerances\r\nclass Settings:\r\n\r\n\t# Ratio of verticalness of an element. If condition doesn't fulfill the condition won't be splitted (no unit)\r\n\tVERTICAL_RATIO = 0.0001\r\n\r\n\t# Tolerance of level location - don't use less than 0.001 (in feets)\r\n\tELEVATION_TOL = 0.01\r\n\r\n\t# Offset of start point from level elevation when elements is not splitted (in feets). Value can't be less than \r\n\t# the length of longest union used in MEP models.\r\n\tOFFSET_TOLERANCE = 0.5\r\n\r\n\t# Rounding number of digits\r\n\tROUNDING = 3\r\n\r\n# Function dedicated for getting levels depending upon the condition\r\n# Returns list of levels sorted by elevation\r\ndef getListOfLevelIds(doc, getAllLevels = IN[1]):\r\n\t\t\r\n\tfltr = db.ElementCategoryFilter(db.BuiltInCategory.OST_Levels)\r\n\tif getAllLevels:\r\n\t\tallLevels = db.FilteredElementCollector(doc).WherePasses(fltr).WhereElementIsNotElementType().ToElements()\r\n\telse:\r\n\t\tallLevels = db.FilteredElementCollector(doc, doc.ActiveView.Id).WherePasses(fltr).WhereElementIsNotElementType().ToElements()\r\n\tlst = list()\r\n\tfor level in sorted(allLevels, key=lambda x: x.Elevation):\r\n\t\tlst.append(level.Id)\r\n\treturn lst\r\n\r\n# Dedicated class for opening which is hosted in a wall\r\nclass WallOpenings():\r\n\r\n\r\n\tdef __init__(self, levels, wall, doc):\r\n\t\tself.levels = levels\r\n\t\tself.wall = wall\r\n\t\tself.doc = doc\r\n\t\tself.getListOfOpeningsHostedInWall()\r\n\t\tself.createDictionaryOpeningAndItsLevel()\r\n\r\n\t# Deletes openings which are not in boundries of new/edited wall element\r\n\tdef deleteOpeningsNotInWallRange(self):\r\n\t\twallBaseConstrainId = self.wall.get_Parameter(db.BuiltInParameter.WALL_BASE_CONSTRAINT).AsElementId()\r\n\t\twallBaseOffset = self.wall.get_Parameter(db.BuiltInParameter.WALL_BASE_OFFSET).AsDouble()\r\n\t\twallTopConstrain = self.wall.get_Parameter(db.BuiltInParameter.WALL_HEIGHT_TYPE).AsElementId()\r\n\t\twallTopOffset = self.wall.get_Parameter(db.BuiltInParameter.WALL_TOP_OFFSET).AsDouble()\r\n\r\n\t\twallBaseElevation = self.doc.GetElement(wallBaseConstrainId).Elevation + wallBaseOffset\r\n\t\twallTopElevation = self.doc.GetElement(wallTopConstrain).Elevation + wallTopOffset\r\n\t\tTransactionManager.Instance.EnsureInTransaction(self.doc)\r\n\t\tfor openingId in self.openingDictionary:\r\n\t\t\topeningElevation = self.openingDictionary[openingId]\r\n\t\t\tif openingElevation < wallBaseElevation or openingElevation > wallTopElevation:\r\n\t\t\t\tself.doc.Delete(openingId)\r\n\t\tTransactionManager.Instance.TransactionTaskDone()\r\n\t\t   \r\n\t# Creates list of openings elements ids and assigns it to allOpeningsId element\r\n\tdef getListOfOpeningsHostedInWall(self):\r\n\t\tself.allOpeningsId = self.wall.GetDependentElements(db.ElementCategoryFilter(db.BuiltInCategory.OST_GenericModel))\r\n\t\t\r\n\t# Creates dictionary of openings. Pair is openingId : levelId\r\n\tdef createDictionaryOpeningAndItsLevel(self):\r\n\t\tself.openingDictionary = {}\r\n\t\tfor openingId in self.allOpeningsId:\r\n\t\t\topening = doc.GetElement(openingId)\r\n\t\t\tself.openingDictionary[openingId] = self.getElevationOfOpening(opening)\r\n\t\treturn self.openingDictionary\r\n\r\n\t# Returns levelId of the closest to an opening\r\n\tdef getElevationOfOpening(self, opening):\r\n\t\topeningLevelId = opening.LookupParameter(\"Level\").AsElementId()\r\n\t\topeningLevel = self.doc.GetElement(openingLevelId)\r\n\t\tindex = self.levels.index(openingLevelId)\r\n\t\ttry:\r\n\t\t\topeningGeneralElevation = openingLevel.Elevation + opening.LookupParameter(\"Elevation\").AsDouble()\r\n\t\texcept AttributeError:\r\n\t\t\topeningGeneralElevation = openingLevel.Elevation + opening.LookupParameter(\"Elevation from Level\").AsDouble()\r\n\t\treturn openingGeneralElevation\r\n\r\n\t# Gets level index in list of levels\r\n\tdef getLevelIndex(self, index, opening, openingGeneralElevation):\r\n\t\ti = index\r\n\t\twhile i < len(self.levels):\r\n\t\t\tlevelElement = doc.GetElement(self.levels[i])\r\n\t\t\tif levelElement.Elevation <= openingGeneralElevation:\r\n\t\t\t\tindex = i\r\n\t\t\telse:\r\n\t\t\t\tbreak\r\n\t\t\ti += 1\r\n\t\treturn index\r\n\r\n\r\n# Abstract class - main class\r\nclass ElementSplitter():\r\n\r\n\tdef __init__(self, doc, element):\r\n\t\tself.doc = doc\r\n\t\tself.element = element\r\n\t\tself.levelIdsList = getListOfLevelIds(doc)\r\n\t\tself.listLevels = self.convertListOfLevelIdsToElements()\r\n\t\tself.listOfElements = list()\r\n\t\r\n\t# Lanuch function which tries to modify offsets\r\n\tdef modifyLevelsAndOffsets(self):\r\n\t\tself.tryToModifyBaseBoundries()\r\n\t\tself.tryToModifyTopBoundries()\r\n\t\r\n\t# Gets data from splitting element\r\n\t# For custom configuration\r\n\tdef getElementData(self):\r\n\t\tself.param_Mark = self.element.LookupParameter(\"Mark\").AsString()\r\n\t\r\n\t# Sets basic parameters to newly created elements\r\n\t# For custom configuration\r\n\tdef setElementData(self, element):\r\n\t\tTransactionManager.Instance.EnsureInTransaction(self.doc)\r\n\t\ttry:\r\n\t\t\telement.LookupParameter(\"Mark\").Set(self.param_Mark)\r\n\t\texcept:\r\n\t\t\tpass\r\n\t\tTransactionManager.Instance.TransactionTaskDone()\r\n\t\r\n\t# Copies element\r\n\tdef copyElement(self):\r\n\t\tTransactionManager.Instance.EnsureInTransaction(self.doc)\r\n\t\telementIdsCollection = db.ElementTransformUtils.CopyElement(self.doc, self.element.Id, db.XYZ(0,0,0))\r\n\t\tTransactionManager.Instance.TransactionTaskDone()\r\n\t\t# new is type of  ICollection<ElementId>, that is why have to convert it into list and get first element, \r\n\t\t# because only one element is copying \r\n\t\treturn self.doc.GetElement(elementIdsCollection[0])\r\n\r\n\t# Deletes element\r\n\tdef deleteOriginalElement(self):\r\n\t\tTransactionManager.Instance.EnsureInTransaction(self.doc)\r\n\t\tself.doc.Delete(self.element.Id)\r\n\t\tTransactionManager.Instance.TransactionTaskDone()\r\n\r\n\t# Additional element for columns with top offset\r\n\tdef additionalElementWhileTopOffset(self, index):\r\n\t\tif self.getTopOffsetValue() != 0:\r\n\t\t\telement = self.copyElement()\r\n\t\t\tself.setBaseOffsetValue(element, 0)\r\n\t\t\tself.setTopOffsetValue(element, self.getTopOffsetValue())\r\n\t\t\tself.setBaseLevel(element, self.levelIdsList[index + 1])\r\n\t\t\tself.setTopLevel(element, self.levelIdsList[index + 1])\r\n\t\t\tself.additionalModificationOfElement(element)\r\n\t\t\treturn element\r\n\r\n\t# Create group from elements stored in self.listOfElements\r\n\tdef createGroup(self):\r\n\t\tlst = list()\r\n\t\tfor el in self.listOfElements:\r\n\t\t\tlst.append(el.Id)\r\n\t\tnewList = sysList[db.ElementId](lst)\r\n\t\tTransactionManager.Instance.EnsureInTransaction(self.doc)\r\n\t\tself.doc.Create.NewGroup(newList)\r\n\t\tTransactionManager.Instance.TransactionTaskDone()\r\n\r\n\t# General function for splitting elements\r\n\tdef splitElement(self):\r\n\t\tself.getElementData()\r\n\t\tif self.isElementPossibleToSplit():\r\n\t\t\tstartLevelIndex = self.getIndexOfBaseLevel()\r\n\t\t\tendLevelIndex = self.getIndexOfTopLevel()\r\n\t\t\tadditionalElement = None\r\n\t\t\tfor i in range(startLevelIndex, endLevelIndex):\r\n\t\t\t\telementToChange = self.copyElement()\r\n\t\t\t\tif i == startLevelIndex:\r\n\t\t\t\t\tself.setBaseOffsetValue(elementToChange, self.getBaseOffsetValue())\r\n\t\t\t\t\tself.setTopOffsetValue(elementToChange, 0)\r\n\t\t\t\telif i == endLevelIndex - 1:\r\n\t\t\t\t\tself.setBaseOffsetValue(elementToChange, 0)\r\n\t\t\t\t\t# optionaly two lines below might be replaced with:\r\n\t\t\t\t\t# self.setTopOffsetValue(elementToChange, self.getTopOffsetValue())\r\n\t\t\t\t\tself.setTopOffsetValue(elementToChange, 0)\r\n\t\t\t\t\tadditionalElement = self.additionalElementWhileTopOffset(i)\r\n\t\t\t\telse:\r\n\t\t\t\t\tself.setBaseOffsetValue(elementToChange, 0)\r\n\t\t\t\t\tself.setTopOffsetValue(elementToChange, 0)\r\n\t\t\t\t\tself.setElementData(elementToChange)\r\n\t\t\t\tself.setBaseLevel(elementToChange, self.levelIdsList[i])\r\n\t\t\t\tself.setTopLevel(elementToChange, self.levelIdsList[i+1])\r\n\t\t\t\tself.additionalModificationOfElement(elementToChange)\r\n\t\t\t\tself.listOfElements.append(elementToChange)\r\n\t\t\t\tif additionalElement:\r\n\t\t\t\t\tself.listOfElements.append(additionalElement)\r\n\t\t\tself.joinElementsInList()\r\n\t\t\tself.deleteOriginalElement()\r\n\t\t\tif IN[2]:\r\n\t\t\t\tself.createGroup()\r\n\r\n\t# Joins list of elements \r\n\tdef joinElementsInList(self):\r\n\t\tTransactionManager.Instance.EnsureInTransaction(self.doc)\r\n\t\tfor i in range(len(self.listOfElements) -1):\r\n\t\t\tfirstElement = self.listOfElements[i]\r\n\t\t\tsecondElement = self.listOfElements[i + 1]\r\n\t\t\ttry:\r\n\t\t\t\tdb.JoinGeometryUtils.JoinGeometry(self.doc, firstElement, secondElement)\r\n\t\t\texcept:\r\n\t\t\t\tpass\r\n\t\tTransactionManager.Instance.TransactionTaskDone()\r\n\r\n\t# Adds Additional modification to element or its subelements\r\n\tdef additionalModificationOfElement(self, elementToChange):\r\n\t\tpass\r\n\r\n\t# checks if element goes trought more than\r\n\tdef isElementPossibleToSplit(self):\r\n\t\ttry:\r\n\t\t\tself.modifyLevelsAndOffsets()\r\n\t\t\tstartLevelIndex = self.getIndexOfBaseLevel()\r\n\t\t\tendLevelIndex = self.getIndexOfTopLevel()\r\n\t\t\tif startLevelIndex + 1 == endLevelIndex:\r\n\t\t\t\treturn False\r\n\t\t\telse:\r\n\t\t\t\treturn True\r\n\t\texcept:\r\n\t\t\treturn False\r\n\t\t\r\n\t# Calculates distance between levels\r\n\tdef getDistanceBetweenLevels(self, originalLevelIndex, newLevelIndex):\r\n\t\tlistOfLevels = self.convertListOfLevelIdsToElements()\r\n\t\treturn listOfLevels[originalLevelIndex].Elevation - listOfLevels[newLevelIndex].Elevation\r\n\r\n\t# Converts list of levels ids to elements\r\n\tdef convertListOfLevelIdsToElements(self):\r\n\t\tlst = list()\r\n\t\tfor levelId in self.levelIdsList:\r\n\t\t\tlst.append(self.doc.GetElement(levelId))\r\n\t\treturn lst\r\n\r\n\t# tries to modify element to set level as high as it is possible\r\n\t# and reduce offset. Instead of situation: Level no 3 with offset 10m\r\n\t# it changes elements base level ie. Level no 5 with offset -50cm \r\n\tdef tryToModifyTopBoundries(self):\r\n\t\tlst = list()\r\n\t\tlevels = self.convertListOfLevelIdsToElements()\r\n\t\ttry:\r\n\t\t\tindex = self.getIndexOfTopLevel()\r\n\t\t\tendLevelOffset = self.getTopOffsetValue()\r\n\t\t# means it's unconnected wall so treat base constraint as top with \r\n\t\t# offset as unconnected height +/- base offset value\r\n\t\texcept ValueError:\r\n\t\t\tindex = self.getIndexOfBaseLevel()\r\n\t\t\tif self.getBaseOffsetValue() < 0:\r\n\t\t\t\tendLevelOffset = self.getHeight() + self.getBaseOffsetValue()\r\n\t\t\telse:\r\n\t\t\t\tendLevelOffset = self.getHeight() - self.getBaseOffsetValue()\r\n\t\telementElevation = levels[index].Elevation + endLevelOffset\r\n\t\tindexOfNewLevel = None\r\n\t\tfor i in range(len(levels)):\r\n\t\t\tif levels[i].Elevation <= elementElevation:\r\n\t\t\t\tindexOfNewLevel = i\r\n\t\t\t\tlst.append(indexOfNewLevel)\r\n\t\t\telse:\r\n\t\t\t\tbreak\r\n\t\tif indexOfNewLevel != None:\r\n\t\t\treturn self.setNewTopBoundries(index, indexOfNewLevel)\r\n\r\n\t# Sets new top boundry for element\r\n\tdef setNewTopBoundries(self, levelIndex, newLevelIndex):\r\n\t\toffsetDifference = self.getDistanceBetweenLevels(levelIndex, newLevelIndex)\r\n\t\t# if wall is unconnected\r\n\t\tif self.getTopConstraintLevelId().IntegerValue == -1:\r\n\t\t\tnewOffset = self.getHeight() + self.getBaseOffsetValue() + offsetDifference\r\n\t\t# Top is constrained to level\r\n\t\telse:\r\n\t\t\tnewOffset = self.getTopOffsetValue() + offsetDifference\r\n\t\tnewLevelId = self.levelIdsList[newLevelIndex]\r\n\t\tTransactionManager.Instance.EnsureInTransaction(doc)\r\n\t\tself.setTopLevel(self.element, newLevelId)\r\n\t\tself.setTopOffsetValue(self.element, newOffset)\r\n\t\tTransactionManager.Instance.TransactionTaskDone()\r\n\r\n\t# tries to modify element to set level as low as it is possible\r\n\t# and reduce offset. Instead of situation: Level no 3 with offset -10m\r\n\t# it changes elements base level ie. Level no 0 with offset -50cm \r\n\tdef tryToModifyBaseBoundries(self):\r\n\t\tindex = self.getIndexOfBaseLevel()\r\n\t\tstartLevelId = self.getBaseConstraintLevelId()\r\n\t\tstartLevelOffset = self.getBaseOffsetValue()\r\n\t\tlevels = self.convertListOfLevelIdsToElements()\r\n\t\tif index != 0:\r\n\t\t\tindexOfNewLevel = None\r\n\t\t\tfor i in range(index, 0, -1):\r\n\t\t\t\tlvlIndex = i - 1\r\n\t\t\t\tif startLevelOffset <= (levels[lvlIndex].Elevation - levels[index].Elevation):\r\n\t\t\t\t\tindexOfNewLevel = lvlIndex\r\n\t\t\t\telse:\r\n\t\t\t\t\tbreak\r\n\t\t\tif indexOfNewLevel != None:\r\n\t\t\t\tself.setNewBaseBoundries(index, indexOfNewLevel)\r\n\r\n\t# Sets new base boundry for element\r\n\tdef setNewBaseBoundries(self, levelIndex, newLevelIndex):\r\n\t\toffsetDifference = self.getDistanceBetweenLevels(levelIndex, newLevelIndex)\r\n\t\tnewOffset = self.getBaseOffsetValue() + offsetDifference\r\n\t\tnewLevelId = self.levelIdsList[newLevelIndex]\r\n\t\tTransactionManager.Instance.EnsureInTransaction(doc)\r\n\t\tself.setBaseLevel(self.element, newLevelId)\r\n\t\tself.setBaseOffsetValue(self.element, newOffset)\r\n\t\tTransactionManager.Instance.TransactionTaskDone()\r\n\t\r\n\t# Returns index of top level on the list of levels\r\n\tdef getIndexOfTopLevel(self):\r\n\t\tendLevelId = self.getTopConstraintLevelId()\r\n\t\treturn self.levelIdsList.index(endLevelId)\r\n\r\n\t# Returns index of base level on the list of levels\r\n\tdef getIndexOfBaseLevel(self):\r\n\t\tstartLevelId = self.getBaseConstraintLevelId()\r\n\t\treturn self.levelIdsList.index(startLevelId)\r\n\r\n\r\n# Class for walls\r\nclass WallSplitter(ElementSplitter):\r\n\r\n#GETTERS\r\n\r\n\t# Returns base constraint levelId\r\n\tdef getBaseConstraintLevelId(self):\r\n\t\treturn self.element.get_Parameter(db.BuiltInParameter.WALL_BASE_CONSTRAINT).AsElementId()\r\n\r\n\t# Returns base offset value\r\n\tdef getBaseOffsetValue(self):\r\n\t\treturn self.element.get_Parameter(db.BuiltInParameter.WALL_BASE_OFFSET).AsDouble()\r\n\r\n\t# Returns unconnected height\r\n\tdef getHeight(self):\r\n\t\treturn self.element.get_Parameter(db.BuiltInParameter.WALL_USER_HEIGHT_PARAM).AsDouble()\r\n\r\n\t# Returns top constraint levelId\r\n\tdef getTopConstraintLevelId(self):\r\n\t\treturn self.element.get_Parameter(db.BuiltInParameter.WALL_HEIGHT_TYPE).AsElementId()\r\n\r\n\t# Returns top offset value\r\n\tdef getTopOffsetValue(self):\r\n\t\treturn self.element.get_Parameter(db.BuiltInParameter.WALL_TOP_OFFSET).AsDouble()\r\n\r\n# SETTERS\r\n\r\n\t# Sets base constraint level based on level Id\r\n\tdef setBaseLevel(self, element, levelId):\r\n\t\telement.get_Parameter(db.BuiltInParameter.WALL_BASE_CONSTRAINT).Set(levelId)\r\n\r\n\t# Void,sets base offset based on value\r\n\tdef setBaseOffsetValue(self, element, value):\r\n\t\telement.get_Parameter(db.BuiltInParameter.WALL_BASE_OFFSET).Set(value)\r\n\r\n\t# Sets top constraint level based on level Id\r\n\tdef setTopLevel(self, element, levelId):\r\n\t\telement.get_Parameter(db.BuiltInParameter.WALL_HEIGHT_TYPE).Set(levelId)\r\n\r\n\t# Void,sets top offset based on value\r\n\tdef setTopOffsetValue(self, element, value):\r\n\t\telement.get_Parameter(db.BuiltInParameter.WALL_TOP_OFFSET).Set(value)\r\n\r\n\t# Due to openings neccessary to develop additional function\r\n\tdef additionalModificationOfElement(self, elementToChange):\r\n\t\tobjectOfOpenings = WallOpenings(self.levelIdsList, elementToChange, self.doc)\r\n\t\tobjectOfOpenings.deleteOpeningsNotInWallRange()\r\n\r\n\r\n# Class for structural columns and columns\r\nclass ColumnSplitter(ElementSplitter):\r\n\r\n#GETTERS\r\n\r\n\t# Returns base constraint\r\n\tdef getBaseConstraintLevelId(self, element = None):\r\n\t\treturn self.element.get_Parameter(db.BuiltInParameter.FAMILY_BASE_LEVEL_PARAM).AsElementId()\r\n\r\n\tdef getBaseOffsetValue(self):\r\n\t\treturn self.element.get_Parameter(db.BuiltInParameter.FAMILY_BASE_LEVEL_OFFSET_PARAM).AsDouble()\r\n\r\n\t# Returns unconnected height\r\n\tdef getHeight(self):\r\n\t\treturn self.element.LookupParameter(\"Length\").AsDouble()\r\n\r\n\t# Returns top constraint levelId\r\n\tdef getTopConstraintLevelId(self):\r\n\t\treturn self.element.get_Parameter(db.BuiltInParameter.FAMILY_TOP_LEVEL_PARAM).AsElementId()\r\n\r\n\t# Returns top offset value\r\n\tdef getTopOffsetValue(self):\r\n\t\treturn self.element.get_Parameter(db.BuiltInParameter.FAMILY_TOP_LEVEL_OFFSET_PARAM).AsDouble()\r\n\r\n# SETTERS\r\n\r\n\t# Sets base constraint level based on level Id\r\n\tdef setBaseLevel(self, element, levelId):\r\n\t\telement.get_Parameter(db.BuiltInParameter.FAMILY_BASE_LEVEL_PARAM).Set(levelId)\r\n\r\n\t# Sets base offset based on value\r\n\tdef setBaseOffsetValue(self, element, value):\r\n\t\telement.get_Parameter(db.BuiltInParameter.FAMILY_BASE_LEVEL_OFFSET_PARAM).Set(value)\r\n\r\n\t# Sets top constraint level based on level Id\r\n\tdef setTopLevel(self, element, levelId):\r\n\t\telement.get_Parameter(db.BuiltInParameter.FAMILY_TOP_LEVEL_PARAM).Set(levelId)\r\n\r\n\t# Sets top offset based on value\r\n\tdef setTopOffsetValue(self, element, value):\r\n\t\telement.get_Parameter(db.BuiltInParameter.FAMILY_TOP_LEVEL_OFFSET_PARAM).Set(value)\r\n\r\n\r\n# Class for slanted columns\r\nclass SlantedColumnSplitter(ColumnSplitter):\r\n\r\n#GETTERS  - inherits from parent\r\n\t\r\n\t# Gets data from splitting element\r\n\tdef getElementData(self):\r\n\t\tself.param_Mark = self.element.LookupParameter(\"Mark\").AsString()\r\n\t\tself.param_BaseCutStyle = self.element.get_Parameter(db.BuiltInParameter.SLANTED_COLUMN_BASE_CUT_STYLE).AsInteger()\r\n\t\tself.param_TopCutStyle = self.element.get_Parameter(db.BuiltInParameter.SLANTED_COLUMN_TOP_CUT_STYLE).AsInteger()\r\n\r\n# SETTERS - inherits from parent\r\n\t\r\n\t# Method prepared for copying all necessary element data. Currently Mark and cut style of top and base\r\n\t# Sets element data got in getElementData\r\n\tdef setElementData(self, element):\r\n\t\tTransactionManager.Instance.EnsureInTransaction(self.doc)\r\n\t\ttry:\r\n\t\t\telement.LookupParameter(\"Mark\").Set(self.param_Mark)\r\n\t\texcept TypeError:\r\n\t\t\tpass\r\n\t\telement.get_Parameter(db.BuiltInParameter.SLANTED_COLUMN_BASE_CUT_STYLE).Set(self.param_BaseCutStyle)\r\n\t\telement.get_Parameter(db.BuiltInParameter.SLANTED_COLUMN_TOP_CUT_STYLE).Set(self.param_TopCutStyle)\r\n\t\tTransactionManager.Instance.TransactionTaskDone()\r\n\r\n\t# Gets difference between start and end point Z Coordinate\r\n\tdef getElementVerticalHeight(self, element):\r\n\t\tif type(element) == db.ElementId:\r\n\t\t\telement = self.doc.GetElement(element)\r\n\t\telementCurve = element.Location.Curve\r\n\t\treturn elementCurve.GetEndPoint(1).Z - elementCurve.GetEndPoint(0).Z\r\n\r\n\t# Splits proper levels for elements which has offset different than 0\r\n\tdef setOffsetForLastElement(self, element, index, coefficient):\r\n\t\tif round(coefficient, Settings.ROUNDING) > 0 and round(coefficient, Settings.ROUNDING) < 1:\r\n\t\t\tself.setBaseLevel(element, self.levelIdsList[index + 1])\r\n\t\t\tself.setTopLevel(element, self.levelIdsList[index + 1])\r\n\t\telse:\r\n\t\t\tself.setBaseLevel(element, self.levelIdsList[index])\r\n\t\t\tself.setTopLevel(element, self.levelIdsList[index + 1])\r\n\t\r\n\t# Split slanted column by coefficient which defines ratio between start and end point of column.\r\n\t# Returns part of eleemnt which is furthure iterated to split entire column\r\n\tdef splitSlanterColumn(self, element, index, coefficient):\r\n\t\toldElement = element\r\n\t\tif round(coefficient, Settings.ROUNDING) > 0 and round(coefficient, Settings.ROUNDING) < 1:\r\n\t\t\tTransactionManager.Instance.EnsureInTransaction(self.doc)\r\n\t\t\telementBeingSplit = self.doc.GetElement(element.Split(coefficient))\r\n\t\t\tTransactionManager.Instance.TransactionTaskDone()\r\n\t\t\tself.setBaseLevel(oldElement, self.levelIdsList[index])\r\n\t\t\tself.setTopLevel(oldElement, self.levelIdsList[index + 1])\r\n\t\t\tself.setElementData(oldElement)\r\n\t\t\treturn elementBeingSplit\r\n\t\telse:\r\n\t\t\treturn element\r\n\r\n\t# Splits slanded column by intersections with all levels\r\n\tdef splitElement(self):\r\n\t\tself.getElementData()\r\n\t\tif self.isElementPossibleToSplit():\r\n\t\t\tstartLevelIndex = self.getIndexOfBaseLevel()\r\n\t\t\tendLevelIndex = self.getIndexOfTopLevel()\r\n\t\t\telementBeingSplit = self.element\r\n\t\t\tself.listOfElements.append(self.element)\r\n\t\t\tfor i in range(startLevelIndex, endLevelIndex):\r\n\t\t\t\tlowerLevel = self.doc.GetElement(self.levelIdsList[i+1]).Elevation\r\n\t\t\t\thigherLevel = self.doc.GetElement(self.levelIdsList[i]).Elevation\r\n\t\t\t\tif i == startLevelIndex:\r\n\t\t\t\t\tsegmentLen = lowerLevel - higherLevel - self.getBaseOffsetValue()\r\n\t\t\t\telif i == endLevelIndex - 1:\r\n\t\t\t\t\tsegmentLen = lowerLevel - higherLevel + self.getTopOffsetValue()\r\n\t\t\t\telse:\r\n\t\t\t\t\tsegmentLen = lowerLevel - higherLevel\r\n\t\t\t\tsplittingRatio = segmentLen/self.getElementVerticalHeight(elementBeingSplit)\r\n\t\t\t\telementBeingSplit = self.splitSlanterColumn(elementBeingSplit, i, splittingRatio)\r\n\t\t\t\tself.listOfElements.append(elementBeingSplit)\r\n\t\t\ttry:\r\n\t\t\t\tself.setOffsetForLastElement(elementBeingSplit, i, splittingRatio)\r\n\t\t\t\tself.setElementData(elementBeingSplit)\r\n\t\t\texcept:\r\n\t\t\t\tpass\r\n\t\t\tif IN[2]:\r\n\t\t\t\tself.createGroup()\r\n\r\n\r\n# Abstract class for MEP elements which is inherited by certain MEP categories\r\nclass MEPElementSplitter(ElementSplitter):\r\n\t\r\n\t# Main function which splits an element into many elements with assigned level and parameters. For electrical\r\n\t# element first think which must be done is disconnection of start and end connectors. In case of other\r\n\t# instalation it is ommited. Than function checks if is it possible to split an element if so starts iteration\r\n\t# trought list of levels to get all cut points - which are intersection points between level plane and line of\r\n\t# an element\r\n\tdef splitElement(self):\r\n\t\tself.getConnectedElements()\r\n\t\tself.disconnectElement()\r\n\t\tif not self.isElementPossibleToSplit():\r\n\t\t\tself.setBaseLevelToElement(self.element)\r\n\t\telementToSplit = self.element\r\n\t\tfor level in self.listLevels:\r\n\t\t\tlevelElevation = level.ProjectElevation\r\n\t\t\tif elementToSplit == None:\r\n\t\t\t\tbreak\r\n\t\t\telif levelElevation > self.startPoint.Z + Settings.OFFSET_TOLERANCE and levelElevation + Settings.ELEVATION_TOL < self.endPoint.Z:\r\n\t\t\t\telementToSplit = self.splitVerticalElement(elementToSplit, level)\r\n\t\tself.listOfElements.append(elementToSplit)\r\n\t\t# Additional method dedicated for conection of electrical elements due to lack of breakCurve method for electrical elements\r\n\t\tif self.element.GetType() == db.Electrical.CableTray or self.element.GetType() == db.Electrical.Conduit:\r\n\t\t\t\tself.connectElements()\r\n\t\tif IN[2]:\r\n\t\t\tself.createGroup()\r\n\r\n\t# Implementation in ElectricalElementsSplitter \r\n\tdef connectElements(self):\r\n\t\tpass\r\n\t\r\n\t# Implementation in ElectricalElementsSplitter \r\n\tdef disconnectElement(self):\r\n\t\tpass\r\n\r\n\t# Get connected elements to the element and adds it to a instance variable connectorsToJoin (list)\r\n\tdef getConnectedElements(self):\r\n\t\tself.connectorsToJoin = list()\r\n\t\t# CableTrays always have 2 connectors\r\n\t\tconnectorManager = self.element.ConnectorManager\r\n\t\tfor i in range(2):\r\n\t\t\tfor j in connectorManager.Lookup(i).AllRefs:\r\n\t\t\t\tif j.Owner.Id != self.element.Id:\r\n\t\t\t\t\tself.connectorsToJoin.append(j)\r\n\r\n\t# Assign levelId to each of MEP element in the list. levelId is assinged to level parameter of an element\r\n\tdef assignLevelsToElements(self, elements):\r\n\t\tfor element in elements:\r\n\t\t\tself.setBaseLevelToElement(element)\r\n\r\n\t# Assign levelId to an element. LevelId is assinged to level parameter of an element\r\n\tdef setBaseLevelToElement(self, element):\r\n\t\telementCurve = element.Location.Curve\r\n\t\tif self.MODELING_STYLE == \"TopToDown\":\r\n\t\t\telementStartPoint = elementCurve.GetEndPoint(0)\r\n\t\telse:\r\n\t\t\telementStartPoint = elementCurve.GetEndPoint(1)\r\n\t\tfor level in self.listLevels:\r\n\t\t\televation = level.ProjectElevation\r\n\t\t\tif self.listLevels.index(level) == 0 and elementStartPoint < elevation:\r\n\t\t\t\tself.setBaseLevel(element, self.levelIdsList[0])\r\n\r\n\t# Splits element but calculated point. Point Z coordinate is calculate base on level\r\n\tdef splitVerticalElement(self, elementToSplit, cutLevel):\r\n\t\ttempElementCurve = elementToSplit.Location.Curve\r\n\t\tendPoint = tempElementCurve.GetEndPoint(1)\r\n\t\tstartPoint = tempElementCurve.GetEndPoint(0)\r\n\t\tvectorFromStartPointToEndPoint = endPoint - startPoint\r\n\t\tproportionOfDistanceToCutLocation = math.fabs(startPoint.Z - cutLevel.ProjectElevation)/startPoint.DistanceTo(endPoint)\r\n\t\tcutPoint = startPoint + vectorFromStartPointToEndPoint * proportionOfDistanceToCutLocation\r\n\t\treturn self.cutElementAndAssignUnionsPlusLevels(elementToSplit, cutPoint)\r\n\r\n\t# checkes if element is almost vertical, it check is horizontal distance ratio between top and down in order \r\n\t# to vertical distance is less than 0.0001\r\n\tdef checkIfElementIsAlmostVertical(self):\r\n\t\tverticalLength = math.fabs(self.endPoint.Z - self.startPoint.Z)\r\n\t\thorizontalLength = math.sqrt(math.fabs(self.endPoint.X - self.startPoint.X)**2 + math.fabs(self.endPoint.Y - self.startPoint.Y)**2)\r\n\t\ttry:\r\n\t\t\tif horizontalLength/verticalLength <= Settings.VERTICAL_RATIO:\r\n\t\t\t\treturn True\r\n\t\t\telse:\r\n\t\t\t\treturn False\r\n\t\t#In case if two elements are at the same elevation\r\n\t\texcept ZeroDivisionError:\r\n\t\t\treturn False\r\n\r\n\t# checks style of a MEP element is it model from Top to Down or from Down to Top and assignes parameter\r\n\tdef setElementModelingStyle(self):\r\n\t\tlocation = self.element.Location.Curve\r\n\t\toriginalStart = location.GetEndPoint(0)\r\n\t\toriginalEnd = location.GetEndPoint(1)\r\n\t\tif originalStart.Z > originalEnd.Z:\r\n\t\t\tself.MODELING_STYLE = \"TopToDown\"\r\n\t\t\tself.startPoint = originalEnd\r\n\t\t\tself.endPoint = originalStart\r\n\t\telse:\r\n\t\t\tself.MODELING_STYLE = \"DownToTop\"\r\n\t\t\tself.startPoint = originalStart\r\n\t\t\tself.endPoint = originalEnd\r\n\r\n\t# Checks if elements is possible to split (if cuts at least one level)\r\n\tdef isElementPossibleToSplit(self):\r\n\t\tself.setElementModelingStyle()\r\n\t\tif not self.checkIfElementIsAlmostVertical():\r\n\t\t\treturn False\r\n\t\tfor level in self.listLevels:\r\n\t\t\tlevelElevation = level.ProjectElevation\r\n\t\t\tif self.startPoint.Z < levelElevation and self.endPoint.Z > levelElevation + Settings.ELEVATION_TOL:\r\n\t\t\t\treturn True\r\n\t\t\telse:\r\n\t\t\t\tcontinue\r\n\t\tif self.startPoint.Z < levelElevation and self.endPoint.Z > levelElevation + Settings.ELEVATION_TOL:\r\n\t\t\t\treturn True\r\n\t\treturn False\r\n\t\r\n\t#GETTERS\r\n\t# Returns base constraint levelId\r\n\tdef getBaseConstraintLevelId(self):\r\n\t\treturn self.element.get_Parameter(db.BuiltInParameter.RBS_START_LEVEL_PARAM).AsElementId()\r\n\r\n\t# Returns base offset value\r\n\tdef getBaseOffsetValue(self):\r\n\t\treturn self.element.get_Parameter(db.BuiltInParameter.RBS_START_OFFSET_PARAM).AsDouble()\r\n\r\n\t#SETTERS\r\n\t# Sets base constraint level based on level Id\r\n\tdef setBaseLevel(self, element, levelId):\r\n\t\tTransactionManager.Instance.EnsureInTransaction(self.doc)\r\n\t\telement.get_Parameter(db.BuiltInParameter.RBS_START_LEVEL_PARAM).Set(levelId)\r\n\t\tTransactionManager.Instance.TransactionTaskDone()\r\n\t\treturn \r\n\r\n\t# Sets base level to an element\r\n\tdef setNewBaseBoundries(self, levelIndex, newLevelIndex):\r\n\t\toffsetDifference = self.getDistanceBetweenLevels(levelIndex, newLevelIndex)\r\n\t\tnewLevelId = self.levelIdsList[newLevelIndex]\r\n\t\tTransactionManager.Instance.EnsureInTransaction(doc)\r\n\t\tself.setBaseLevel(self.element, newLevelId)\r\n\t\tTransactionManager.Instance.TransactionTaskDone()\r\n\r\n\t# Adds a union between connectors\r\n\tdef createNewUnion(self, newConnector, oldConnector):\r\n\t\tTransactionManager.Instance.EnsureInTransaction(self.doc)\r\n\t\t# It is important due to a assignment of proper level to the newly created union\r\n\t\tif self.MODELING_STYLE == \"TopToDown\":\r\n\t\t\tunion = self.doc.Create.NewUnionFitting(oldConnector, newConnector)\r\n\t\telse:\r\n\t\t\tunion = self.doc.Create.NewUnionFitting(newConnector, oldConnector)\r\n\t\tTransactionManager.Instance.TransactionTaskDone()\r\n\t\tself.listOfElements.append(union)\r\n\r\n\t# Search for a common connector location between two elements. It runs method for creation of new union when \r\n\t# 2 connectors in the same location are found\r\n\tdef insertUnion(self, newElement, elementToSplit):\r\n\t\tnewElementManager = newElement.ConnectorManager\r\n\t\toldElementManager = elementToSplit.ConnectorManager\r\n\t\t# All MEP elements splitted by this script has only two connectors\r\n\t\tfor i in range(2):\r\n\t\t\tfor j in range(2):\r\n\t\t\t\tnewConnector = newElementManager.Lookup(i)\r\n\t\t\t\toldConnector = oldElementManager.Lookup(j)\r\n\t\t\t\tif newConnector.Origin.IsAlmostEqualTo(oldConnector.Origin):\r\n\t\t\t\t\tself.createNewUnion(newConnector, oldConnector)\r\n\r\n\t# Function returns Z coordinate of start and end point of linear MEP element\r\n\tdef getStartEndZCoordinateTuple(self, element):\r\n\t\telementCurve = element.Location.Curve\r\n\t\tpoint_1 = elementCurve.GetEndPoint(0).Z\r\n\t\tpoint_2 = elementCurve.GetEndPoint(1).Z\r\n\t\tif point_1 < point_2:\r\n\t\t\treturn (point_1, point_2)\r\n\t\telse:\r\n\t\t\treturn (point_2, point_1)\r\n\r\n\t# Assigns element to most level where it is located in a model - description of conditions inside the method\r\n\tdef assignProperLevelToElement(self, element):\r\n\t\t# Due to modeling style TopDown or DownTop location of an element might cause issue. That is why coordinates\r\n\t\t# variable is created. It gets start point as a point with less Z coordinate \r\n\t\tcoordinates = self.getStartEndZCoordinateTuple(element)\r\n\t\tstartPoint = coordinates[0]\r\n\t\tendPoint = coordinates[1]\r\n\t\tfor level in self.listLevels:\r\n\t\t\televation = level.ProjectElevation\r\n\t\t\tlevelIndex = self.listLevels.index(level)\r\n\t\t\t# levels are sorted by elevation in ascending order. Condition checks if start point is located close\r\n\t\t\t# to an level. If so it breaks the iteration and sets found level as host level\r\n\t\t\tif elevation + Settings.ELEVATION_TOL > startPoint and elevation - Settings.ELEVATION_TOL < startPoint:\r\n\t\t\t\tbreak\r\n\t\t\t# The same as condition for start point. But in case of end point levelIndex is decreased by one (if \r\n\t\t\t# levelIndex != 0), because element has its start point somewhere between levelIndex and levelIndex - 1,\r\n\t\t\t# so levelIndex - 1 is choosen.\r\n\t\t\telif elevation + Settings.ELEVATION_TOL > endPoint and elevation - Settings.ELEVATION_TOL < endPoint:\r\n\t\t\t\tif levelIndex != 0 and not (startPoint > elevation and endPoint >= elevation):\r\n\t\t\t\t\tlevelIndex = levelIndex - 1\r\n\t\t\t\tbreak\r\n\t\tself.setBaseLevel(element, self.levelIdsList[levelIndex])\r\n\r\n\t# The method assigns elements into level where they belongs to. Moreover after assignment it runs addUnion\r\n\t# method which connect the elements. \r\n\tdef assignElementsToLevelsAndAddUnion(self, newElement, elementToSplit):\r\n\t\tif elementToSplit != None:\r\n\t\t\tself.assignProperLevelToElement(elementToSplit)\r\n\t\tif newElement != None:\r\n\t\t\tself.assignProperLevelToElement(newElement)\r\n\t\tif newElement != None:\r\n\t\t\tself.insertUnion(newElement, elementToSplit)\r\n\r\n\r\n# Class dedicated for Ducts. \r\n# Inheritst from ElementSplitter -> MEPElementSplitter -> DuctSplitter\r\nclass DuctSplitter(MEPElementSplitter):\r\n\r\n\t# Function splits duct into two elements. Returning element which might require further splitting\r\n\tdef cutElementAndAssignUnionsPlusLevels(self, elementToSplit, cutPoint):\r\n\t\tTransactionManager.Instance.EnsureInTransaction(self.doc)\r\n\t\tnewElementId = db.Mechanical.MechanicalUtils.BreakCurve(self.doc, elementToSplit.Id, cutPoint)\r\n\t\tnewElement = self.doc.GetElement(newElementId)\r\n\t\tself.listOfElements.append(newElement)\r\n\t\tTransactionManager.Instance.TransactionTaskDone()\r\n\t\tself.assignElementsToLevelsAndAddUnion(newElement, elementToSplit)\r\n\t\tif self.MODELING_STYLE == \"TopToDown\":\r\n\t\t\treturn newElement\r\n\t\treturn elementToSplit\r\n\r\n\r\n# Class dedicated for Pipes (not conduits). \r\n# Inheritst from ElementSplitter -> MEPElementSplitter -> PipeSplitter\r\nclass PipeSplitter(MEPElementSplitter):\r\n\r\n\t# Function splits pipe into two elements. Returning element which might require further splitting\r\n\tdef cutElementAndAssignUnionsPlusLevels(self, elementToSplit, cutPoint):\r\n\t\tTransactionManager.Instance.EnsureInTransaction(self.doc)\r\n\t\tnewElementId = db.Plumbing.PlumbingUtils.BreakCurve(self.doc, elementToSplit.Id, cutPoint)\r\n\t\tnewElement = self.doc.GetElement(newElementId)\r\n\t\tself.listOfElements.append(newElement)\r\n\t\tTransactionManager.Instance.TransactionTaskDone()\r\n\t\tself.assignElementsToLevelsAndAddUnion(newElement, elementToSplit)\r\n\t\tif self.MODELING_STYLE == \"TopToDown\":\r\n\t\t\treturn newElement\r\n\t\treturn elementToSplit\r\n\r\n\r\n# Class dedicated for splitting conduits and cableTrays. \r\n# Inheritst from ElementSplitter -> MEPElementSplitter -> ElectricalElementsSplitter\r\nclass ElectricalElementsSplitter(MEPElementSplitter):\r\n\r\n\t# Function splits cableTray/conduit into two elements. Returning element which might require further splitting\r\n\t# Depending upon location style points are selected in 2 two ways\r\n\tdef cutElementAndAssignUnionsPlusLevels(self, elementToSplit, cutPoint):\r\n\t\tTransactionManager.Instance.EnsureInTransaction(self.doc)\r\n\t\tif self.MODELING_STYLE == \"TopToDown\":\r\n\t\t\telementToSplitLine = db.Line.CreateBound(self.element.Location.Curve.GetEndPoint(0), cutPoint)\r\n\t\t\tnewElementLine = db.Line.CreateBound(cutPoint, self.element.Location.Curve.GetEndPoint(1))\r\n\t\telse:\r\n\t\t\telementToSplitLine = db.Line.CreateBound(cutPoint, self.element.Location.Curve.GetEndPoint(1))\r\n\t\t\tnewElementLine = db.Line.CreateBound(self.element.Location.Curve.GetEndPoint(0), cutPoint)\r\n\t\tnewElement = self.copyElement()\r\n\t\tself.listOfElements.append(newElement)\r\n\t\telementToSplit.Location.Curve = elementToSplitLine\r\n\t\tnewElement.Location.Curve = newElementLine\r\n\t\tself.assignElementsToLevels(elementToSplit, newElement)\r\n\t\tTransactionManager.Instance.TransactionTaskDone()\r\n\t\treturn elementToSplit\r\n\r\n\t# There is no way to predict location of union in cableTrays, that is why \r\n\t# decided to implement additional functionality - connectElements, which does it\r\n\t# after full split of elements into sepate db.Elements\r\n\tdef assignElementsToLevels(self, newElement, elementToSplit):\r\n\t\tif elementToSplit != None:\r\n\t\t\tself.assignProperLevelToElement(elementToSplit)\r\n\t\tif newElement != None:\r\n\t\t\tself.assignProperLevelToElement(newElement)\r\n\r\n\t# Adds iterate trought all created elements (cableTrays or conduits)\r\n\t# gets connectors and adds it to instance variable self.connectorsToJoin.\r\n\tdef addAllConnectorsToTheList(self):\r\n\t\tfor element in self.listOfElements:\r\n\t\t\tconnectorsList = list(element.ConnectorManager.Connectors)\r\n\t\t\tfor connector in connectorsList:\r\n\t\t\t\tself.connectorsToJoin.append(connector)\r\n\r\n\t# Connects all newly created cableTray/Conduit elements. Method is sorts connectors ordered by elevation and tries \r\n\t# to insert union. If insertion of union returns exception it means there is required connection with fitting - so\r\n\t# union is not necessary\r\n\tdef connectElements(self):\r\n\t\tself.addAllConnectorsToTheList()\r\n\t\tsortedByLevel = sorted(self.connectorsToJoin, key = lambda x : x.Origin.Z)\r\n\t\tfor connectorIndex in range(len(sortedByLevel) - 1):\r\n\t\t\tmainConnector = sortedByLevel[connectorIndex]\r\n\t\t\t# Get next item in list\r\n\t\t\tconnectorToCheck = sortedByLevel[connectorIndex + 1]\r\n\t\t\tif mainConnector.Origin.IsAlmostEqualTo(connectorToCheck.Origin):\r\n\t\t\t\ttry:\r\n\t\t\t\t\tif self.MODELING_STYLE == \"TopToDown\":\r\n\t\t\t\t\t\tself.createNewUnion(connectorToCheck, mainConnector)\r\n\t\t\t\t\telse:\r\n\t\t\t\t\t\tself.createNewUnion(mainConnector, connectorToCheck)\r\n\t\t\t\texcept:\r\n\t\t\t\t\tTransactionManager.Instance.EnsureInTransaction(self.doc)\r\n\t\t\t\t\tmainConnector.ConnectTo(connectorToCheck)\r\n\t\t\t\t\tTransactionManager.Instance.TransactionTaskDone\r\n\r\n\r\n\t# Disconnects electrical elements from fitting for splitting process. The method is neccessary, because otherwise\r\n\t# top elements remembers and holds connection with fitting\r\n\tdef disconnectElement(self):\r\n\t\tconnectorManager = self.element.ConnectorManager\r\n\t\tfor connectorIndex in range(2):\r\n\t\t\tconnectorOfOriginalElement = connectorManager.Lookup(connectorIndex)\r\n\t\t\tfor connectorToDisconnect in self.connectorsToJoin:\r\n\t\t\t\tif connectorOfOriginalElement.IsConnectedTo(connectorToDisconnect):\r\n\t\t\t\t\tTransactionManager.Instance.EnsureInTransaction(self.doc)\r\n\t\t\t\t\tconnectorOfOriginalElement.DisconnectFrom(connectorToDisconnect)\r\n\t\t\t\t\tTransactionManager.Instance.TransactionTaskDone()\r\n\r\n# Converts selected in IN[0] node elements into list. No matter if there is only\r\n# one or multiple input elements\r\ndef getlistOfElements():\r\n\tif hasattr(IN[0], '__iter__'):\r\n\t\treturn IN[0]\r\n\telse:\r\n\t\treturn [IN[0]]\r\n\r\n\r\n# #### RUNS HERE ####\r\nfor elementToSplit in getlistOfElements():\r\n\ttry:\r\n\t\t# Converts dynamo element into db.Element (from revit API)\r\n\t\trevitElement = doc.GetElement(db.ElementId(elementToSplit.Id))\r\n\texcept AttributeError:\r\n\t\tcontinue\t\t\r\n\ttry:\r\n\t\telementType = revitElement.GetType()\r\n\texcept TypeError:\r\n\t\telementType = None\r\n\telement = None\r\n\tif elementType == db.Wall:\r\n\t\telement = WallSplitter(doc, revitElement)\r\n\telif elementType == db.FamilyInstance:\r\n\t\t# Depending upon structural type of column most suitable class is used for\r\n\t\t# element creation\r\n\t\tstructuralType = revitElement.StructuralType\r\n\t\tif structuralType == db.Structure.StructuralType.Column and not revitElement.IsSlantedColumn:\r\n\t\t\telement = ColumnSplitter(doc, revitElement)\r\n\t\telif structuralType == db.Structure.StructuralType.Column and revitElement.IsSlantedColumn:\r\n\t\t\telement = SlantedColumnSplitter(doc, revitElement)\r\n\telif elementType == db.Mechanical.Duct:\r\n\t\telement = DuctSplitter(doc, revitElement)\r\n\telif elementType == db.Plumbing.Pipe:\r\n\t\telement = PipeSplitter(doc, revitElement)\r\n\telif elementType == db.Electrical.CableTray or elementType == db.Electrical.Conduit:\r\n\t\telement = ElectricalElementsSplitter(doc, revitElement)\r\n\t# If class instance was created element is splitted\r\n\tif element != None:\r\n\t\telement.splitElement()\r\n\r\nOUT = \"done\"",
       "VariableInputPorts": true,
-      "Id": "1a1b73be4df9457298e13d9fbb1ec5dc",
+      "Id": "920cb0e1e4bd4cceb1980b257e1071a7",
       "Inputs": [
         {
-          "Id": "51d5b7d47f3e43ed9e674015fbaeeb75",
+          "Id": "bf945bfeb8214d569e4cdc66e20cb15a",
           "Name": "IN[0]",
           "Description": "Input #0",
           "UsingDefaultValue": false,
@@ -94,7 +26,7 @@
           "KeepListStructure": false
         },
         {
-          "Id": "c7ef63d7537f4d739938a5eb0f4a5ac0",
+          "Id": "0a694f35339c42ad97f5607f78ebab15",
           "Name": "IN[1]",
           "Description": "Input #1",
           "UsingDefaultValue": false,
@@ -103,7 +35,7 @@
           "KeepListStructure": false
         },
         {
-          "Id": "e3eaf11e4d1846c5982d0d2fe1fc33ef",
+          "Id": "15789ee47da84af08ee862f9b119ef9c",
           "Name": "IN[2]",
           "Description": "Input #2",
           "UsingDefaultValue": false,
@@ -114,7 +46,7 @@
       ],
       "Outputs": [
         {
-          "Id": "7c552860f02d4b7aa4735104379acb2f",
+          "Id": "2336e89df61345f5b8374f660372c536",
           "Name": "OUT",
           "Description": "Result of the python script",
           "UsingDefaultValue": false,
@@ -127,14 +59,51 @@
       "Description": "Runs an embedded IronPython script."
     },
     {
-      "ConcreteType": "CoreNodeModels.Input.BoolSelector, CoreNodeModels",
-      "NodeType": "BooleanInputNode",
-      "InputValue": true,
-      "Id": "d16f6f1cec3e4fdc96ed925e48597c39",
+      "ConcreteType": "Dynamo.Nodes.DSModelElementsSelection, DSRevitNodesUI",
+      "NodeType": "ExtensionNode",
+      "InstanceId": [
+        "d3605ee0-ea9e-49da-b821-60ed1d327237-00150d04",
+        "d3605ee0-ea9e-49da-b821-60ed1d327237-00150d0f",
+        "d3605ee0-ea9e-49da-b821-60ed1d327237-00150d17",
+        "d3605ee0-ea9e-49da-b821-60ed1d327237-00150d1c",
+        "d3605ee0-ea9e-49da-b821-60ed1d327237-00150d24",
+        "d3605ee0-ea9e-49da-b821-60ed1d327237-00150d27",
+        "d3605ee0-ea9e-49da-b821-60ed1d327237-00150d2d",
+        "d3605ee0-ea9e-49da-b821-60ed1d327237-00150d32",
+        "d3605ee0-ea9e-49da-b821-60ed1d327237-00150d3d",
+        "d3605ee0-ea9e-49da-b821-60ed1d327237-00150d40",
+        "d3605ee0-ea9e-49da-b821-60ed1d327237-00150d56",
+        "d3605ee0-ea9e-49da-b821-60ed1d327237-00150d5a",
+        "d3605ee0-ea9e-49da-b821-60ed1d327237-00150d67",
+        "d3605ee0-ea9e-49da-b821-60ed1d327237-00150d6f",
+        "d3605ee0-ea9e-49da-b821-60ed1d327237-00150d7b",
+        "d3605ee0-ea9e-49da-b821-60ed1d327237-00150dac",
+        "d3605ee0-ea9e-49da-b821-60ed1d327237-00150dc3"
+      ],
+      "Id": "a2f22409d215491691ab90ec2373bb03",
       "Inputs": [],
       "Outputs": [
         {
-          "Id": "3ba197594750457988b1360afeb0f3b1",
+          "Id": "74bbd40d931f4242a4f906a53ea298e6",
+          "Name": "Elements",
+          "Description": "The selected elements.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.BoolSelector, CoreNodeModels",
+      "NodeType": "BooleanInputNode",
+      "InputValue": true,
+      "Id": "c1497648064e42839a1b277b0a7baf54",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "f1c3037364ba4ed7aeb5da1e3b158132",
           "Name": "",
           "Description": "Boolean",
           "UsingDefaultValue": false,
@@ -150,11 +119,11 @@
       "ConcreteType": "CoreNodeModels.Input.BoolSelector, CoreNodeModels",
       "NodeType": "BooleanInputNode",
       "InputValue": false,
-      "Id": "ad6c2c1491ff45f2babfa64aefd5e431",
+      "Id": "0253cb9bbf104305be5ed1fbb4a014df",
       "Inputs": [],
       "Outputs": [
         {
-          "Id": "59e1771eac934150bcef2ccd79685a14",
+          "Id": "b3c2884a40b04ea68a31ea2a10472d99",
           "Name": "",
           "Description": "Boolean",
           "UsingDefaultValue": false,
@@ -169,19 +138,19 @@
   ],
   "Connectors": [
     {
-      "Start": "66768cebc63543d9b92f49571c6e9386",
-      "End": "51d5b7d47f3e43ed9e674015fbaeeb75",
-      "Id": "d70400151a80412cadaed727b873a27a"
+      "Start": "74bbd40d931f4242a4f906a53ea298e6",
+      "End": "bf945bfeb8214d569e4cdc66e20cb15a",
+      "Id": "8958b2b2c6f748e58820b66331b7e459"
     },
     {
-      "Start": "3ba197594750457988b1360afeb0f3b1",
-      "End": "c7ef63d7537f4d739938a5eb0f4a5ac0",
-      "Id": "aa7c3fea2efc444f975c31b538bf56e9"
+      "Start": "f1c3037364ba4ed7aeb5da1e3b158132",
+      "End": "0a694f35339c42ad97f5607f78ebab15",
+      "Id": "346bf77ce0f14ad980360dbd3ba095c5"
     },
     {
-      "Start": "59e1771eac934150bcef2ccd79685a14",
-      "End": "e3eaf11e4d1846c5982d0d2fe1fc33ef",
-      "Id": "d6f54050d1694b8ab57e86bcf55bc28b"
+      "Start": "b3c2884a40b04ea68a31ea2a10472d99",
+      "End": "15789ee47da84af08ee862f9b119ef9c",
+      "Id": "2aa3d732dc5d4b1c813b068b23b577d2"
     }
   ],
   "Dependencies": [],
@@ -192,7 +161,7 @@
       "ScaleFactor": 1.0,
       "HasRunWithoutCrash": true,
       "IsVisibleInDynamoLibrary": true,
-      "Version": "2.6.1.8786",
+      "Version": "2.5.0.7460",
       "RunType": "Manual",
       "RunPeriod": "1000"
     },
@@ -211,64 +180,48 @@
     "NodeViews": [
       {
         "ShowGeometry": true,
-        "Name": "Pick elements",
-        "Id": "b344bca634e843c9b56662ad23e52a4b",
-        "IsSetAsInput": true,
-        "IsSetAsOutput": false,
-        "Excluded": false,
-        "X": 332.38138854745858,
-        "Y": 376.00827590323297
-      },
-      {
-        "ShowGeometry": true,
         "Name": "Python Script",
-        "Id": "1a1b73be4df9457298e13d9fbb1ec5dc",
+        "Id": "920cb0e1e4bd4cceb1980b257e1071a7",
         "IsSetAsInput": false,
         "IsSetAsOutput": false,
         "Excluded": false,
-        "X": 1022.0986131918752,
-        "Y": 520.29932192210481
+        "X": 540.37709186628706,
+        "Y": 248.47878878139664
       },
       {
         "ShowGeometry": true,
-        "Name": "True = Split by all levels. False = Split by visible levels in current view",
-        "Id": "d16f6f1cec3e4fdc96ed925e48597c39",
-        "IsSetAsInput": true,
+        "Name": "Select Model Elements",
+        "Id": "a2f22409d215491691ab90ec2373bb03",
+        "IsSetAsInput": false,
         "IsSetAsOutput": false,
         "Excluded": false,
-        "X": 329.49389910937725,
-        "Y": 603.09516101857389
+        "X": 47.06528189910982,
+        "Y": 106.02373887240364
       },
       {
         "ShowGeometry": true,
-        "Name": "Create groups of splitted elements?",
-        "Id": "ad6c2c1491ff45f2babfa64aefd5e431",
-        "IsSetAsInput": true,
+        "Name": "True = Split by all levels/False = Split by levels in current view",
+        "Id": "c1497648064e42839a1b277b0a7baf54",
+        "IsSetAsInput": false,
         "IsSetAsOutput": false,
         "Excluded": false,
-        "X": 334.43840987245972,
-        "Y": 761.31950543720939
-      }
-    ],
-    "Annotations": [
+        "X": 42.317507418397668,
+        "Y": 276.12553069426525
+      },
       {
-        "Id": "134d92976b7f4921b18a349c255ea53a",
-        "Title": "Not available now (not working for cases when top/base constrain in list of hidden levels)",
-        "Nodes": [],
-        "Left": 330.20275355415532,
-        "Top": 555.718838740238,
-        "Width": 0.0,
-        "Height": 0.0,
-        "FontSize": 36.0,
-        "InitialTop": 0.0,
-        "InitialHeight": 0.0,
-        "TextblockHeight": 0.0,
-        "Background": "#FFC1D676"
+        "ShowGeometry": true,
+        "Name": "Group elements ?",
+        "Id": "0253cb9bbf104305be5ed1fbb4a014df",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 38.95221380824799,
+        "Y": 354.52220773950228
       }
     ],
-    "X": -161.99502603318615,
-    "Y": 1.8519448319791536,
-    "Zoom": 0.70057341322593558
-
+    "Annotations": [],
+    "X": 22.46697362170471,
+    "Y": -4.9579668916607034,
+    "Zoom": 1.1047642563030273
   }
 }
