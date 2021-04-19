@@ -731,6 +731,7 @@ class DuctSplitter(MEPElementSplitter):
 		TransactionManager.Instance.TransactionTaskDone()
 		self.assignElementsToLevelsAndAddUnion(newElement, elementToSplit)
 		if self.MODELING_STYLE == "TopToDown":
+			self.listOfElements.append(elementToSplit)
 			return newElement
 		return elementToSplit
 
@@ -748,6 +749,7 @@ class PipeSplitter(MEPElementSplitter):
 		TransactionManager.Instance.TransactionTaskDone()
 		self.assignElementsToLevelsAndAddUnion(newElement, elementToSplit)
 		if self.MODELING_STYLE == "TopToDown":
+			self.listOfElements.append(elementToSplit)
 			return newElement
 		return elementToSplit
 
