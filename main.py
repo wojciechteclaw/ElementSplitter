@@ -36,6 +36,7 @@ class Settings:
 # Function dedicated for getting levels depending upon the condition
 # Returns list of levels sorted by elevation
 def getListOfLevelIds(doc, getAllLevels = IN[1]):
+		
 	fltr = db.ElementCategoryFilter(db.BuiltInCategory.OST_Levels)
 	if getAllLevels:
 		allLevels = db.FilteredElementCollector(doc).WherePasses(fltr).WhereElementIsNotElementType().ToElements()
@@ -48,6 +49,7 @@ def getListOfLevelIds(doc, getAllLevels = IN[1]):
 
 # Dedicated class for opening which is hosted in a wall
 class WallOpenings():
+
 
 	def __init__(self, levels, wall, doc):
 		self.levels = levels
@@ -178,12 +180,11 @@ class ElementSplitter():
 	def splitElement(self):
 		self.getElementData()
 		if self.isElementPossibleToSplit():
-			self.elementsToJoinList = list()
 			startLevelIndex = self.getIndexOfBaseLevel()
 			endLevelIndex = self.getIndexOfTopLevel()
+			additionalElement = None
 			for i in range(startLevelIndex, endLevelIndex):
 				elementToChange = self.copyElement()
-				self.elementsToJoinList.append(elementToChange)
 				if i == startLevelIndex:
 					self.setBaseOffsetValue(elementToChange, self.getBaseOffsetValue())
 					self.setTopOffsetValue(elementToChange, 0)
@@ -193,7 +194,6 @@ class ElementSplitter():
 					# self.setTopOffsetValue(elementToChange, self.getTopOffsetValue())
 					self.setTopOffsetValue(elementToChange, 0)
 					additionalElement = self.additionalElementWhileTopOffset(i)
-					self.elementsToJoinList.append(additionalElement)
 				else:
 					self.setBaseOffsetValue(elementToChange, 0)
 					self.setTopOffsetValue(elementToChange, 0)
@@ -202,17 +202,21 @@ class ElementSplitter():
 				self.setTopLevel(elementToChange, self.levelIdsList[i+1])
 				self.additionalModificationOfElement(elementToChange)
 				self.listOfElements.append(elementToChange)
+				if additionalElement:
+					self.listOfElements.append(additionalElement)
 			self.joinElementsInList()
 			self.deleteOriginalElement()
 			if IN[2]:
 				self.createGroup()
-	
+
 	# Joins list of elements 
 	def joinElementsInList(self):
 		TransactionManager.Instance.EnsureInTransaction(self.doc)
-		for i in range(len(self.elementsToJoinList)-1):
+		for i in range(len(self.listOfElements) -1):
+			firstElement = self.listOfElements[i]
+			secondElement = self.listOfElements[i + 1]
 			try:
-				db.JoinGeometryUtils.JoinGeometry(self.doc, self.elementsToJoinList[i], self.elementsToJoinList[i + 1])
+				db.JoinGeometryUtils.JoinGeometry(self.doc, firstElement, secondElement)
 			except:
 				pass
 		TransactionManager.Instance.TransactionTaskDone()
@@ -384,7 +388,7 @@ class ColumnSplitter(ElementSplitter):
 #GETTERS
 
 	# Returns base constraint
-	def getBaseConstraintLevelId(self):
+	def getBaseConstraintLevelId(self, element = None):
 		return self.element.get_Parameter(db.BuiltInParameter.FAMILY_BASE_LEVEL_PARAM).AsElementId()
 
 	def getBaseOffsetValue(self):
