@@ -522,7 +522,7 @@ class MEPElementSplitter(ElementSplitter):
 		self.getConnectedElements()
 		self.disconnectElement()
 		if not self.isElementPossibleToSplit():
-			self.setBaseLevelToElement(self.element)
+			return self.setBaseLevelToElement(self.element)
 		elementToSplit = self.element
 		for level in self.listLevels:
 			levelElevation = level.ProjectElevation
