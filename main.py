@@ -17,7 +17,7 @@ clr.AddReference("RevitAPI")
 import Autodesk.Revit.DB as db
 doc = DocumentManager.Instance.CurrentDBDocument
 
-# Static class for settings of parameters
+# Class for setting splitting tolerances
 class Settings:
 
 	# Ratio of verticalness of an element. If condition doesn't fulfill the condition won't be splitted (no unit)
@@ -33,10 +33,11 @@ class Settings:
 	# Rounding number of digits
 	ROUNDING = 3
 
-# functions collecting side elements
-def getListOfLevelIds(doc):
+# Function dedicated for getting levels depending upon the condition
+# Returns list of levels sorted by elevation
+def getListOfLevelIds(doc, getAllLevels = IN[1]):
 	fltr = db.ElementCategoryFilter(db.BuiltInCategory.OST_Levels)
-	if (IN[1]):
+	if getAllLevels:
 		allLevels = db.FilteredElementCollector(doc).WherePasses(fltr).WhereElementIsNotElementType().ToElements()
 	else:
 		allLevels = db.FilteredElementCollector(doc, doc.ActiveView.Id).WherePasses(fltr).WhereElementIsNotElementType().ToElements()
@@ -163,6 +164,7 @@ class ElementSplitter():
 			self.additionalModificationOfElement(element)
 			return element
 
+	# Create group from elements stored in self.listOfElements
 	def createGroup(self):
 		lst = list()
 		for el in self.listOfElements:
@@ -176,12 +178,12 @@ class ElementSplitter():
 	def splitElement(self):
 		self.getElementData()
 		if self.isElementPossibleToSplit():
-			self.listOfElementsToJoin = list()
+			self.elementsToJoinList = list()
 			startLevelIndex = self.getIndexOfBaseLevel()
 			endLevelIndex = self.getIndexOfTopLevel()
 			for i in range(startLevelIndex, endLevelIndex):
 				elementToChange = self.copyElement()
-				self.listOfElementsToJoin.append(elementToChange)
+				self.elementsToJoinList.append(elementToChange)
 				if i == startLevelIndex:
 					self.setBaseOffsetValue(elementToChange, self.getBaseOffsetValue())
 					self.setTopOffsetValue(elementToChange, 0)
@@ -191,7 +193,7 @@ class ElementSplitter():
 					# self.setTopOffsetValue(elementToChange, self.getTopOffsetValue())
 					self.setTopOffsetValue(elementToChange, 0)
 					additionalElement = self.additionalElementWhileTopOffset(i)
-					self.listOfElementsToJoin.append(additionalElement)
+					self.elementsToJoinList.append(additionalElement)
 				else:
 					self.setBaseOffsetValue(elementToChange, 0)
 					self.setTopOffsetValue(elementToChange, 0)
@@ -208,9 +210,9 @@ class ElementSplitter():
 	# Joins list of elements 
 	def joinElementsInList(self):
 		TransactionManager.Instance.EnsureInTransaction(self.doc)
-		for i in range(len(self.listOfElementsToJoin)-1):
+		for i in range(len(self.elementsToJoinList)-1):
 			try:
-				db.JoinGeometryUtils.JoinGeometry(self.doc, self.listOfElementsToJoin[i], self.listOfElementsToJoin[i + 1])
+				db.JoinGeometryUtils.JoinGeometry(self.doc, self.elementsToJoinList[i], self.elementsToJoinList[i + 1])
 			except:
 				pass
 		TransactionManager.Instance.TransactionTaskDone()
