@@ -1,10 +1,28 @@
 # ElementSplitter
-Script which allows to split elements by levels. There are two options of additional settings:
-  -Split by all levels existing in the project or split by levels visible in current view. WARNING second option is not so stable, make sure you have visible levels which are assigned to top and base of the elements when splitting
-  -Grouping splitted elements. Grouping includes all newly created elements
-Currentelty avaliable elements to split are: Structural Columns, Slanted Strcutural Columns, Walls, Ducts, Pipes, Conduits and CableTrays.
 
+Script which allows to split elements by levels.
 ![alt text](https://github.com/wojciechteclaw/ElementSplitter/blob/feature_editingReadMe/static/dynamoView.png)
+#### 1 Select model elements node - selects elements for splitting
+#### 2 Boolean node - option if user want to splits elements by all levels or only by levels visible in current view
+#### 3 Boolean node - option if user want to group splitted elements. In case of MEP categories group also contains unions:
+
+## Categories:
+# -Walls (without changed profile)
+# -Structural Columns
+# -Slanted Strcutural Columns
+# -Ducts
+# -Pipes
+# -Conduits
+# -Cable Trays
+
+## Unions:
+![alt text](https://github.com/wojciechteclaw/ElementSplitter/blob/feature_editingReadMe/static/MEPelements.png)
+Unions and elements 1b, 2b, 3b, 4b are assigned to the level "Level XXX". Elements taged as 1a, 2a, 3a, 4a are assigned to Level XXX - 1.
+
+## Division of structural elements:
+![alt text](https://github.com/wojciechteclaw/ElementSplitter/blob/feature_editingReadMe/static/WallsAndColumnsSplitting.png)
+In case of structural elements (Walls and Structural Columns) they won't be splitted by the first level. As in the picture above. Feel free to message me if you need to change it.
 
 
-#### Stay safe and updated!
+## Openings is walls
+Currently script works for wall with opening modeled as #### generic models. In developlemnt there is another version for Door and Window Categories. 
