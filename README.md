@@ -4,4 +4,7 @@ Script which allows to split elements by levels. There are two options of additi
   -Grouping splitted elements. Grouping includes all newly created elements
 Currentelty avaliable elements to split are: Structural Columns, Slanted Strcutural Columns, Walls, Ducts, Pipes, Conduits and CableTrays.
 
+![alt text](https://github.com/wojciechteclaw/ElementSplitter/blob/feature_editingReadMe/static/dynamoView.png)
+
+
 #### Stay safe and updated!
