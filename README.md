@@ -9,13 +9,13 @@ The script allows to split elements by levels using only dynamo. It performs the
 #### 3 Boolean node - option if user want to group splitted elements. In case of MEP categories group also contains unions:
 
 ## Categories:
-### -Walls (without changed profile)
-### -Structural Columns
-### -Slanted Strcutural Columns
-### -Ducts
-### -Pipes
-### -Conduits
-### -Cable Trays
+#### -Walls (without changed profile)
+#### -Structural Columns
+#### -Slanted Strcutural Columns
+#### -Ducts
+#### -Pipes
+#### -Conduits
+#### -Cable Trays
 
 ## Unions:
 ![alt text](https://github.com/wojciechteclaw/ElementSplitter/blob/feature_editingReadMe/static/MEPelements.png)
@@ -31,4 +31,4 @@ Currently script works for wall with opening modeled as generic models. Family o
 ![alt text](https://github.com/wojciechteclaw/ElementSplitter/blob/feature_editingReadMe/static/Opening.png)
 In developlemnt there is another version for Door and Window Categories. 
 
-© 2021 Wojciech Tec³aw
+Â© 2021 Wojciech TecÅ‚aw
