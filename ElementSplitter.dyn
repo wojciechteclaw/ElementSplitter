@@ -28,15 +28,7 @@
       "ConcreteType": "Dynamo.Nodes.DSModelElementsSelection, DSRevitNodesUI",
       "NodeType": "ExtensionNode",
       "InstanceId": [
-<<<<<<< HEAD
-        "ad79c18e-a037-490c-8db6-c3ca5714eb83-007e43d7",
-        "ad79c18e-a037-490c-8db6-c3ca5714eb83-007e48e6"
-=======
         "b2b55fbe-7590-4abe-9a75-417e0282e342-00150052",
-<<<<<<< HEAD
-<<<<<<< HEAD
-        "95b5aa13-4921-4827-a496-049f31926157-00150399"
-=======
         "b2b55fbe-7590-4abe-9a75-417e0282e342-0015005a",
         "e46af575-cde1-499d-a8fd-42cc6b9df399-00152055",
         "e46af575-cde1-499d-a8fd-42cc6b9df399-0015208d",
@@ -68,11 +60,7 @@
         "e46af575-cde1-499d-a8fd-42cc6b9df399-001521d6",
         "e46af575-cde1-499d-a8fd-42cc6b9df399-001521d7",
         "e46af575-cde1-499d-a8fd-42cc6b9df399-001521d8"
->>>>>>> f70723b (ElementSplitter to refactoring)
-=======
         "95b5aa13-4921-4827-a496-049f31926157-00150399"
->>>>>>> bf55818 (solved issues)
->>>>>>> 9e4b349 (solved conflict with dynamo)
       ],
       "Id": "b344bca634e843c9b56662ad23e52a4b",
       "Inputs": [],
@@ -278,26 +266,9 @@
         "Background": "#FFC1D676"
       }
     ],
-<<<<<<< HEAD
-    "X": -180.24078578843233,
-    "Y": -175.38519205282159,
-    "Zoom": 0.75298792989129726
-=======
-<<<<<<< HEAD
-<<<<<<< HEAD
-    "X": -153.45050270841685,
-    "Y": -137.11069868948988,
-    "Zoom": 0.75298792989129726
-=======
     "X": -161.99502603318615,
     "Y": 1.8519448319791536,
     "Zoom": 0.70057341322593558
->>>>>>> f70723b (ElementSplitter to refactoring)
-=======
-    "X": -153.45050270841685,
-    "Y": -137.11069868948988,
-    "Zoom": 0.75298792989129726
->>>>>>> bf55818 (solved issues)
->>>>>>> 9e4b349 (solved conflict with dynamo)
+
   }
 }
